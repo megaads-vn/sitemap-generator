@@ -1,9 +1,9 @@
 <?php 
-namespace Megaads\Generatesitemap\Controller;
+namespace Megaads\Generatesitemap\Controllers;
 
 use Megaads\Generatesitemap\Models\Store;
 
-class SitemapGeneratorController
+class GeneratorController
 {
     /**
      * Generate sitemap.xml from database tables
