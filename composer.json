@@ -9,5 +9,13 @@
         }
     ],
     "minimum-stability": "stable",
-    "require": {}
+    "require": {},
+    "autoload": {
+        "classmap": [
+            "src"
+        ],
+        "psr-4": {
+            "Megaads\\Generatesitemap\\": "src/"
+        }
+    }
 }
