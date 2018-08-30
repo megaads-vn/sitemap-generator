@@ -26,7 +26,7 @@ class SitemapGeneratorController extends BaseController
      * @return null
      */
     public function generate() {
-
+        $this->sitemapConfigurator->add(route('frontend::home'), '1');
         $stores = Stores::get(['slug']);
         foreach ($stores as $store) {
             $piority = '0.8';
@@ -34,15 +34,16 @@ class SitemapGeneratorController extends BaseController
             $changefreq = 'daily';
             $this->sitemapConfigurator->add(route($this->storeRouteName, ['slug' => $store->slug]), $piority, $lastMode, $changefreq);
         }
+
         $categories = Categories::get(['slug']);
-        if (count($categories) > 0) {
-            foreach ($categories as $category) {
-                $piority = '0.8';
-                $lastMode = date('Y-m-d');
-                $changefreq = 'daily';
-                $this->sitemapConfigurator->add(route($this->storeRcategoryRouteNameouteName, ['slug' => $category->slug]), $piority, $lastMode, $changefreq);
-            }
+        foreach ($categories as $category) {
+            $piority = '0.8';
+            $lastMode = date('Y-m-d');
+            $changefreq = 'daily';
+            $this->sitemapConfigurator->add(route($this->categoryRouteName, ['slug' => $category->slug]), $piority, $lastMode, $changefreq);
         }
+
         $this->sitemapConfigurator->store('xml', 'sitemap');
+
     }
 }

@@ -6,7 +6,9 @@ namespace Megaads\Generatesitemap\Services;
 class SitemapConfigurator
 {
     protected $xmlString;
-    protected $defaultUrlSet = '<url><loc>#url</loc><priority>#piority</priority><lastmod>#lastMode</lastmod><changefreq>#changefreq</changefreq></url>';
+    protected $defaultUrlSet = '<url><loc>#url</loc><priority>#piority</priority>#lastMode#changefreq</url>';
+    protected $defaultLastMode = '<lastmod>#lastMode</lastmod>';
+    protected $defaultChangefreq = '<changefreq>#changefreq</changefreq>';
     protected $arrayUrlSet = [];
     protected $publicPath = null;
 
@@ -25,12 +27,26 @@ class SitemapConfigurator
      * @param $lastMode
      * @param $changefreq
      */
-    public function add($url, $piority, $lastMode, $changefreq)
+    public function add($url, $piority, $lastMode='', $changefreq='')
     {
         $stringUrlSet = $this->defaultUrlSet;
         $stringUrlSet = str_replace('#url', $url, $stringUrlSet);
         $stringUrlSet = str_replace('#piority', $piority, $stringUrlSet);
-        $stringUrlSet = str_replace('#lastMode', $lastMode, $stringUrlSet);
+        if ($lastMode != '') {
+            $strLastMode = str_replace('#lastMode', $lastMode, $this->defaultLastMode);
+            $stringUrlSet = str_replace('#lastMode', $strLastMode, $stringUrlSet);
+        } else {
+            $stringUrlSet = str_replace('#lastMode', '', $stringUrlSet);
+        }
+
+        if ($changefreq != '') {
+            $strChangefreq = str_replace('#changefreq', $lastMode, $this->defaultChangefreq);
+            $stringUrlSet = str_replace('#changefreq', $strChangefreq, $stringUrlSet);
+        } else {
+            $stringUrlSet = str_replace('#changefreq', '', $stringUrlSet);
+        }
+
+
         $stringUrlSet = str_replace('#changefreq', $changefreq, $stringUrlSet);
         array_push($this->arrayUrlSet, $stringUrlSet);
     }
@@ -72,6 +88,4 @@ class SitemapConfigurator
         $this->xmlString .= '#contents';
         $this->xmlString .= '</urlset>';
     }
-
-    
 }
