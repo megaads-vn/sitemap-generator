@@ -2,6 +2,7 @@
 namespace Megaads\Generatesitemap;
 
 use Illuminate\Support\ServiceProvider;
+use Megaads\Generatesitemap\Services\SitemapConfigurator;
 
 class GeneratesitemapServiceProvider extends ServiceProvider
 {
@@ -14,6 +15,8 @@ class GeneratesitemapServiceProvider extends ServiceProvider
 
     public function register() 
     {
-        
+        $this->app->singleton('sitemapConfigurator', function() {
+            return new SitemapConfigurator();
+        });
     }
 }
