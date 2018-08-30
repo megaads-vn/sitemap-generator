@@ -2,7 +2,6 @@
 
 namespace Megaads\Generatesitemap\Services;
 
-
 class SitemapConfigurator
 {
     protected $xmlString;
@@ -46,10 +45,10 @@ class SitemapConfigurator
             $stringUrlSet = str_replace('#changefreq', '', $stringUrlSet);
         }
 
-
         $stringUrlSet = str_replace('#changefreq', $changefreq, $stringUrlSet);
         array_push($this->arrayUrlSet, $stringUrlSet);
     }
+
 
     /***
      * @param $type
@@ -72,12 +71,14 @@ class SitemapConfigurator
         fclose($openFile);
     }
 
+
     /***
      * @return string
      */
     public function hello() {
         return "HELLO WORLD";
     }
+
 
     /***
      *

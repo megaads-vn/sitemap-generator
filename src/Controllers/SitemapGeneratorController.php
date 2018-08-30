@@ -44,6 +44,6 @@ class SitemapGeneratorController extends BaseController
         }
 
         $this->sitemapConfigurator->store('xml', 'sitemap');
-
     }
+    
 }
