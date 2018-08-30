@@ -72,4 +72,6 @@ class SitemapConfigurator
         $this->xmlString .= '#contents';
         $this->xmlString .= '</urlset>';
     }
+
+    
 }

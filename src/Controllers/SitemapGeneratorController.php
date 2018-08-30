@@ -2,6 +2,7 @@
 namespace Megaads\Generatesitemap\Controllers;
 
 use Megaads\Generatesitemap\Models\Stores;
+use Megaads\Generatesitemap\Models\Categories;
 use Illuminate\Routing\Controller as BaseController;
 
 class SitemapGeneratorController extends BaseController
@@ -31,7 +32,16 @@ class SitemapGeneratorController extends BaseController
             $piority = '0.8';
             $lastMode = date('Y-m-d');
             $changefreq = 'daily';
-            $this->sitemapConfigurator->add(route('frontend::store::listByStore', ['slug' => $store->slug]), $piority, $lastMode, $changefreq);
+            $this->sitemapConfigurator->add(route($this->storeRouteName, ['slug' => $store->slug]), $piority, $lastMode, $changefreq);
+        }
+        $categories = Categories::get(['slug']);
+        if (count($categories) > 0) {
+            foreach ($categories as $category) {
+                $piority = '0.8';
+                $lastMode = date('Y-m-d');
+                $changefreq = 'daily';
+                $this->sitemapConfigurator->add(route($this->storeRcategoryRouteNameouteName, ['slug' => $category->slug]), $piority, $lastMode, $changefreq);
+            }
         }
         $this->sitemapConfigurator->store('xml', 'sitemap');
     }

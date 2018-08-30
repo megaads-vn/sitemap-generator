@@ -19,4 +19,6 @@ class GeneratesitemapServiceProvider extends ServiceProvider
             return new SitemapConfigurator();
         });
     }
+
+    
 }
