@@ -3,7 +3,7 @@ namespace Megaads\Generatesitemap\Controller;
 
 use Megaads\Generatesitemap\Models\Store;
 
-class GeneratorController
+class SitemapGeneratorController
 {
     /**
      * Generate sitemap.xml from database tables
