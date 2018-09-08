@@ -23,7 +23,7 @@
    Finally, go the below url to generate sitemap. File sitemap.xml will be generate automatically and save to public path.
    
    ```
-   //example.com/sitemap/generator
+   //example.com/sitemap-generator
    ```
    
    And can see result file with url `//example.com/sitemap.xml`
