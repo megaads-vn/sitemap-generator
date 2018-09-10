@@ -56,7 +56,7 @@ class SitemapConfigurator
      */
     public function store($type, $name) {
         $xmlFile = $this->publicPath . $name . '.' . $type;
-        if (file_exists($xmlFile)) unlink($xmlFile);
+        // if (file_exists($xmlFile)) unlink($xmlFile);
 
         $openFile = fopen($xmlFile, "w");
 
