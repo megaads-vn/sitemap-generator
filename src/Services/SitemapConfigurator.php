@@ -39,7 +39,7 @@ class SitemapConfigurator
         }
 
         if ($changefreq != '') {
-            $strChangefreq = str_replace('#changefreq', $lastMode, $this->defaultChangefreq);
+            $strChangefreq = str_replace('#changefreq', $changefreq, $this->defaultChangefreq);
             $stringUrlSet = str_replace('#changefreq', $strChangefreq, $stringUrlSet);
         } else {
             $stringUrlSet = str_replace('#changefreq', '', $stringUrlSet);
