@@ -2,6 +2,7 @@
 namespace Megaads\Generatesitemap\Controllers;
 
 use Dotenv\Dotenv;
+use Illuminate\Support\Facades\DB;
 use Megaads\Generatesitemap\Models\Stores;
 use Megaads\Generatesitemap\Models\Categories;
 use Illuminate\Routing\Controller as BaseController;
@@ -10,6 +11,8 @@ class SitemapGeneratorController extends BaseController
 {
     protected $storeRouteName = 'frontend::store::listByStore';
     protected $categoryRouteName = 'frontend::category::listByCategory';
+    protected $storePath = 'store/';
+    protected $categoryPath = 'coupon-category/';
     protected $publicPath = null;
     private $sitemapConfigurator;
 
@@ -59,23 +62,18 @@ class SitemapGeneratorController extends BaseController
 
         $this->multipleGenerate($localesKey);
         $this->sitemapConfigurator->mergeSitemap($localesKey);
-
-        return response()->json(['status' => 'successful', 'message' => 'Sitemap created']);
     }
 
     private function multipleGenerate($localesKey, $index = 0) {
         if ($index == count($localesKey)) {
             return "success";
         }
-
+        $this->loadDotEnv($localesKey[$index]);
+        $this->changeConfigurationDatabase();
         try {
-            $this->loadDotEnv($localesKey[$index]);
-            //Override database connection config
-            $this->changeConfigurationDatabase();
-
-
-            $this->addSitemapData('category', $this->categoryRouteName);
-            $this->addSitemapData('store', $this->storeRouteName);
+            $this->sitemapConfigurator->add(route('frontend::home') . '/' . $localesKey[$index], '1');
+            $this->addSitemapData('category', route('frontend::home') . '/'. $localesKey[$index]  . '/' . $this->categoryPath . '#slug');
+            $this->addSitemapData('store', route('frontend::home') . '/'. $localesKey[$index]  . '/' . $this->storePath . '#slug');
 
             $this->sitemapConfigurator->store('xml', $localesKey[$index].'-sitemap', true, $localesKey[$index]);
 
@@ -83,39 +81,38 @@ class SitemapGeneratorController extends BaseController
             \Log::error("At locales " . $localesKey[$index] . ' ' . $ex->getMessage());
         }
 
+        $this->sitemapConfigurator->resetUrlSet();
+        $this->sitemapConfigurator->resetXmlString();
         $this->multipleGenerate($localesKey, $index + 1);
     }
 
     private function changeConfigurationDatabase() {
-        config(['database.connections.mysql.host' => getenv('DB_HOST')]);
-        config(['database.connections.mysql.port' => getenv('DB_PORT')]);
-        config(['database.connections.mysql.database' => getenv('DB_DATABASE')]);
-        config(['database.connecitons.mysql.username' => getenv('DB_USERNAME')]);
-        config(['database.connections.mysql.password' => getenv('DB_PASSWORD')]);
+        $config = config('database.connections.mysql');
+        $config['database'] = getenv('DB_DATABASE');
+        $config['username'] = getenv('DB_USERNAME');
+        $config['password'] = getenv('DB_PASSWORD');
+        config()->set('database.connections.mysql', $config);
     }
 
-    private function addSitemapData($table, $routeName,$columns=['slug']) {
+    private function addSitemapData($table, $routeName, $columns=['slug']) {
         try {
-            $tableItems = \DB::connection('mysql')
+            $tableItems = DB::reconnect()
                 ->table($table)
                 ->get($columns);
 
             if ( !empty($tableItems) ) {
                 foreach($tableItems as $item) {
-                    if ($item->slug == 'root')
-                        continue;
+                    if ($item->slug == 'root') continue;
 
                     $piority = "0.8";
                     $lastMode = date('Y-m-d');
                     $changeFreq = 'daily';
-                    $this->sitemapConfigurator->add(route($routeName, ['slug' => $item->slug]), $piority, $lastMode, $changeFreq);
+                    $routeName = str_replace('#slug', $item->slug, $routeName);
+                    $this->sitemapConfigurator->add($routeName, $piority, $lastMode, $changeFreq);
                 }
             }
-            \DB::disconnect('mysql');
         } catch (\Exception $exception) {
-            \DB::disconnect('mysql');
             throw new \Exception("Error database connection. Please check again");
-            \Log::error($exception->getMessage());
         }
     }
 

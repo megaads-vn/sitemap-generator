@@ -4,7 +4,7 @@ namespace Megaads\Generatesitemap\Services;
 
 class SitemapConfigurator
 {
-    protected $xmlString;
+    protected $xmlString = "";
     protected $defaultUrlSet = '<url><loc>#url</loc><priority>#piority</priority>#lastMode#changefreq</url>';
     protected $defaultLastMode = '<lastmod>#lastMode</lastmod>';
     protected $defaultChangefreq = '<changefreq>#changefreq</changefreq>';
@@ -67,8 +67,8 @@ class SitemapConfigurator
         }
 
         $openFile = fopen($xmlFile, "w");
-
         $stringContents = '';
+
         foreach ($this->arrayUrlSet as $item) {
             $stringContents .= $item;
         }
@@ -98,6 +98,14 @@ class SitemapConfigurator
         $this->store('xml', 'sitemap');
     }
 
+
+    public function resetUrlSet() {
+        $this->arrayUrlSet = [];
+    }
+
+    public function resetXmlString() {
+        $this->addXmlHead();
+    }
 
     /***
      * @return string
