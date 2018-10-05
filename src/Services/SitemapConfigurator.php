@@ -54,9 +54,17 @@ class SitemapConfigurator
      * @param $type
      * @param $name
      */
-    public function store($type, $name) {
+    public function store($type, $name, $isMultiple = false, $locale = '')
+    {
         $xmlFile = $this->publicPath . $name . '.' . $type;
-        // if (file_exists($xmlFile)) unlink($xmlFile);
+        if ($isMultiple) {
+            $localeFolder = $this->publicPath . 'sitemap/' . $locale;
+            if (!file_exists($localeFolder)) {
+                mkdir($localeFolder, 0777, true);
+            }
+
+            $xmlFile = $localeFolder . '/' . $name . '.' . $type;
+        }
 
         $openFile = fopen($xmlFile, "w");
 
@@ -69,6 +77,25 @@ class SitemapConfigurator
 
         fwrite($openFile, $this->xmlString);
         fclose($openFile);
+    }
+
+    public function mergeSitemap($locales)
+    {
+        $publicPath = $this->publicPath;
+        $this->addMergeXmlHead();
+        $this->arrayUrlSet = [];
+        $mergeSitemapString = '<sitemap><loc>#loc_content</loc><lastmod>#lastmod</lastmod></sitemap>';
+        $lastMode = date('Y-m-d');
+        foreach($locales as $locale) {
+            if (file_exists($publicPath . 'sitemap/' . $locale)) {
+                $mergeXml = $mergeSitemapString;
+                $mergeXml = str_replace('#loc_content', route('frontend::home') . '/sitemap/' . $locale . '/' . $locale.'-sitemap.xml', $mergeXml);
+                $mergeXml = str_replace('#lastmod', $lastMode, $mergeXml);
+                array_push($this->arrayUrlSet, $mergeXml);
+            }
+        }
+
+        $this->store('xml', 'sitemap');
     }
 
 
@@ -88,5 +115,15 @@ class SitemapConfigurator
         $this->xmlString .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">';
         $this->xmlString .= '#contents';
         $this->xmlString .= '</urlset>';
+    }
+
+    /***
+     *
+     */
+    private function addMergeXmlHead() {
+        $this->xmlString = '<?xml version="1.0" encoding="utf-8" ?>';
+        $this->xmlString .= '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/siteindex.xsd">';
+        $this->xmlString .= '#contents';
+        $this->xmlString .= '</sitemapindex>';
     }
 }
