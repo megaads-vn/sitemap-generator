@@ -1,5 +1,5 @@
 <?php
-if (config('sitemap_config.multilangues')) {
+if (config('generate-sitemap.multilangues')) {
     $avaiablelocales = config('app.locales');
     $locale = Request::segment(1);
     if (!array_key_exists($locale, $avaiablelocales)) {
@@ -12,4 +12,3 @@ if (config('sitemap_config.multilangues')) {
 Route::group(['prefix' => $locale, 'namespace' => '\Megaads\Generatesitemap\Controllers'], function() {
     Route::get('/sitemap-generator', 'SitemapGeneratorController@generate');
 });
-

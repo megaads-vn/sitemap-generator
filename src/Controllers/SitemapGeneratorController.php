@@ -27,7 +27,7 @@ class SitemapGeneratorController extends BaseController
      * @return null
      */
     public function generate() {
-        $isMultiple = config('sitemap_config.multiplesitemap');
+        $isMultiple = config('generate-sitemap.multiplesitemap');
         if (!$isMultiple) {
             $this->sitemapConfigurator->add(route('frontend::home'), '1');
             $stores = Stores::get(['slug']);
@@ -54,7 +54,7 @@ class SitemapGeneratorController extends BaseController
     }
 
     public function multipleGenerateSitemap() {
-        $localesConfig = config('sitemap_config.locales');
+        $localesConfig = config('generate-sitemap.locales');
         $localesKey = array_keys($localesConfig);
 
         $this->multipleGenerate($localesKey);
