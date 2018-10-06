@@ -15,6 +15,7 @@ class SitemapGeneratorController extends BaseController
     protected $categoryPath = 'coupon-category/';
     protected $publicPath = null;
     private $sitemapConfigurator;
+    protected $defaultLocale = '';
 
     /***
      * SitemapGeneratorController constructor.
@@ -23,6 +24,7 @@ class SitemapGeneratorController extends BaseController
     {
         $this->publicPath = base_path() . '/public';
         $this->sitemapConfigurator = app()->make('sitemapConfigurator');
+        $this->defaultLocale = config('generate-sitemap.defaultlocale');
     }
 
     /***
@@ -74,6 +76,11 @@ class SitemapGeneratorController extends BaseController
             $this->sitemapConfigurator->add(route('frontend::home') . '/' . $localesKey[$index], '1');
             $this->addSitemapData('category', route('frontend::home') . '/'. $localesKey[$index]  . '/' . $this->categoryPath . '#slug');
             $this->addSitemapData('store', route('frontend::home') . '/'. $localesKey[$index]  . '/' . $this->storePath . '#slug');
+
+            if ($this->defaultLocale !== '' && $this->defaultLocale == $localesKey[$index]) {
+                $this->addSitemapData('category', route($this->categoryRouteName, ['slug' => '#slug']));
+                $this->addSitemapData('store', route($this->storeRouteName, ['slug' => '#slug']));
+            }
 
             $this->sitemapConfigurator->store('xml', $localesKey[$index].'-sitemap', true, $localesKey[$index]);
 

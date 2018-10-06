@@ -2,7 +2,7 @@
 
 return [
     'multiplesitemap' => false,
-
+    'defaultlocale' => '',
     'locales' => [
         'us' => 'United States',
         'uk' => 'United Kingdom',
