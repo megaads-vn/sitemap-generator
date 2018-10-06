@@ -68,7 +68,7 @@ class SitemapGeneratorController extends BaseController
         if ($index == count($localesKey)) {
             return "success";
         }
-        $this->loadDotEnv($localesKey[0]);
+        $this->loadDotEnv($localesKey[$index]);
         $this->changeConfigurationDatabase();
         try {
             $this->sitemapConfigurator->add(route('frontend::home') . '/' . $localesKey[$index], '1');
