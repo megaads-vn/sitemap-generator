@@ -68,7 +68,7 @@ class SitemapGeneratorController extends BaseController
         if ($index == count($localesKey)) {
             return "success";
         }
-        $this->loadDotEnv($localesKey[$index]);
+        $this->loadDotEnv($localesKey[0]);
         $this->changeConfigurationDatabase();
         try {
             $this->sitemapConfigurator->add(route('frontend::home') . '/' . $localesKey[$index], '1');
@@ -103,12 +103,12 @@ class SitemapGeneratorController extends BaseController
             if ( !empty($tableItems) ) {
                 foreach($tableItems as $item) {
                     if ($item->slug == 'root') continue;
-
+                    $route = "";
                     $piority = "0.8";
                     $lastMode = date('Y-m-d');
                     $changeFreq = 'daily';
-                    $routeName = str_replace('#slug', $item->slug, $routeName);
-                    $this->sitemapConfigurator->add($routeName, $piority, $lastMode, $changeFreq);
+                    $route = str_replace('#slug', $item->slug, $routeName);
+                    $this->sitemapConfigurator->add($route, $piority, $lastMode, $changeFreq);
                 }
             }
         } catch (\Exception $exception) {
