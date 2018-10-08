@@ -1,12 +1,13 @@
 <?php
+
 namespace Megaads\Generatesitemap\Controllers;
 
 use Dotenv\Dotenv;
+use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Request;
-use Megaads\Generatesitemap\Models\Stores;
 use Megaads\Generatesitemap\Models\Categories;
-use Illuminate\Routing\Controller as BaseController;
+use Megaads\Generatesitemap\Models\Stores;
 
 class SitemapGeneratorController extends BaseController
 {
@@ -30,7 +31,8 @@ class SitemapGeneratorController extends BaseController
      * Generate sitemap from table
      * @return null
      */
-    public function generate() {
+    public function generate()
+    {
         $isMultiple = config('generate-sitemap.multiplesitemap');
         if (!$isMultiple) {
             $this->sitemapConfigurator->add(route('frontend::home'), '1');
@@ -57,7 +59,8 @@ class SitemapGeneratorController extends BaseController
         return response()->json(['status' => 'successful', 'message' => 'Sitemap created']);
     }
 
-    public function multipleGenerateSitemap() {
+    public function multipleGenerateSitemap()
+    {
         $localesConfig = config('app.locales', []);
         $localesKey = Request::segment(1);
         if (array_key_exists($localesKey, $localesConfig)) {
@@ -66,7 +69,8 @@ class SitemapGeneratorController extends BaseController
         }
     }
 
-    private function multipleGenerate($localesKey, $index = 0) {
+    private function multipleGenerate($localesKey, $index = 0)
+    {
         $this->loadDotEnv($localesKey);
         $this->changeConfigurationDatabase();
         try {
@@ -74,7 +78,7 @@ class SitemapGeneratorController extends BaseController
             $this->addSitemapData('category', route($this->categoryRouteName, ['slug' => '#slug']));
             $this->addSitemapData('store', route($this->storeRouteName, ['slug' => '#slug']));
             $this->addSitemapData('blog', route($this->blogRouteName, ['slug' => '#slug']));
-            $this->sitemapConfigurator->store('xml', $localesKey.'-sitemap', true, $localesKey);
+            $this->sitemapConfigurator->store('xml', $localesKey . '-sitemap', true, $localesKey);
 
         } catch (\Exception $ex) {
             \Log::error("At locales " . $localesKey . ' ' . $ex->getMessage());
@@ -84,7 +88,8 @@ class SitemapGeneratorController extends BaseController
         $this->sitemapConfigurator->resetXmlString();
     }
 
-    private function changeConfigurationDatabase() {
+    private function changeConfigurationDatabase()
+    {
         $config = config('database.connections.mysql');
         $config['database'] = getenv('DB_DATABASE');
         $config['username'] = getenv('DB_USERNAME');
@@ -92,14 +97,15 @@ class SitemapGeneratorController extends BaseController
         config()->set('database.connections.mysql', $config);
     }
 
-    private function addSitemapData($table, $routeName, $columns=['slug']) {
+    private function addSitemapData($table, $routeName, $columns = ['slug'])
+    {
         try {
             $tableItems = DB::reconnect()
                 ->table($table)
                 ->get($columns);
 
-            if ( !empty($tableItems) ) {
-                foreach($tableItems as $item) {
+            if (!empty($tableItems)) {
+                foreach ($tableItems as $item) {
                     if ($item->slug == 'root') continue;
                     $route = "";
                     $piority = "0.8";
@@ -114,25 +120,32 @@ class SitemapGeneratorController extends BaseController
         }
     }
 
-    private function loadDotEnv($localEnv) {
+    private function loadDotEnv($localEnv)
+    {
         try {
-            $dotenv = new Dotenv(__DIR__.'/../../../../../', '.'.$localEnv.'.env');
+            $dotenv = new Dotenv(__DIR__ . '/../../../../../', '.' . $localEnv . '.env');
             $dotenv->overload();
         } catch (\Exception $exception) {
             echo "Load env error " . $exception->getMessage();
         }
     }
 
-    public function generateAll () {
-
+    public function generateAll()
+    {
         $configLocales = config('app.locales', []);
+        $listLocaleSuccess = [];
         foreach ($configLocales as $keyLocale => $nameLocale) {
             $url = config('app.domain') . '/' . $keyLocale . '/sitemap-generator';
             $request = $this->curlRequest($url);
+            if (isset($request->status) && $request->status == 'successful') {
+                $listLocaleSuccess[] = $nameLocale;
+            }
         }
+        return response()->json(['status' => 'successful', 'message' => 'List sitemap created: ' . implode(', ', $listLocaleSuccess)]);
     }
 
-    private function curlRequest($url, $data = [], $method = "GET" , $isAsync = false) {
+    private function curlRequest($url, $data = [], $method = "GET", $isAsync = false)
+    {
         $channel = curl_init();
         curl_setopt($channel, CURLOPT_URL, $url);
         curl_setopt($channel, CURLOPT_CUSTOMREQUEST, $method);
@@ -145,11 +158,11 @@ class SitemapGeneratorController extends BaseController
         curl_setopt($channel, CURLOPT_POSTREDIR, 1);
         curl_setopt($channel, CURLOPT_TIMEOUT, 10);
         curl_setopt($channel, CURLOPT_CONNECTTIMEOUT, 10);
-        if($isAsync){
+        if ($isAsync) {
             curl_setopt($channel, CURLOPT_NOSIGNAL, 1);
             curl_setopt($channel, CURLOPT_TIMEOUT_MS, 400);
         }
         $response = curl_exec($channel);
-        return $response;
+        return json_decode($response);
     }
 }
