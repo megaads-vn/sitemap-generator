@@ -3,6 +3,7 @@ namespace Megaads\Generatesitemap\Controllers;
 
 use Dotenv\Dotenv;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Request;
 use Megaads\Generatesitemap\Models\Stores;
 use Megaads\Generatesitemap\Models\Categories;
 use Illuminate\Routing\Controller as BaseController;
@@ -11,11 +12,10 @@ class SitemapGeneratorController extends BaseController
 {
     protected $storeRouteName = 'frontend::store::listByStore';
     protected $categoryRouteName = 'frontend::category::listByCategory';
-    protected $storePath = 'store/';
-    protected $categoryPath = 'coupon-category/';
+    protected $blogRouteName = 'frontend::blog::detail';
+
     protected $publicPath = null;
     private $sitemapConfigurator;
-    protected $defaultLocale = '';
 
     /***
      * SitemapGeneratorController constructor.
@@ -24,7 +24,6 @@ class SitemapGeneratorController extends BaseController
     {
         $this->publicPath = base_path() . '/public';
         $this->sitemapConfigurator = app()->make('sitemapConfigurator');
-        $this->defaultLocale = config('generate-sitemap.defaultlocale');
     }
 
     /***
@@ -59,38 +58,30 @@ class SitemapGeneratorController extends BaseController
     }
 
     public function multipleGenerateSitemap() {
-        $localesConfig = config('generate-sitemap.locales');
-        $localesKey = array_keys($localesConfig);
-
-        $this->multipleGenerate($localesKey);
-        $this->sitemapConfigurator->mergeSitemap($localesKey);
+        $localesConfig = config('app.locales', []);
+        $localesKey = Request::segment(1);
+        if (array_key_exists($localesKey, $localesConfig)) {
+            $this->multipleGenerate($localesKey);
+            $this->sitemapConfigurator->mergeSitemap([$localesKey]);
+        }
     }
 
     private function multipleGenerate($localesKey, $index = 0) {
-        if ($index == count($localesKey)) {
-            return "success";
-        }
-        $this->loadDotEnv($localesKey[$index]);
+        $this->loadDotEnv($localesKey);
         $this->changeConfigurationDatabase();
         try {
-            $this->sitemapConfigurator->add(route('frontend::home') . '/' . $localesKey[$index], '1');
-            $this->addSitemapData('category', route('frontend::home') . '/'. $localesKey[$index]  . '/' . $this->categoryPath . '#slug');
-            $this->addSitemapData('store', route('frontend::home') . '/'. $localesKey[$index]  . '/' . $this->storePath . '#slug');
-
-            if ($this->defaultLocale !== '' && $this->defaultLocale == $localesKey[$index]) {
-                $this->addSitemapData('category', route($this->categoryRouteName, ['slug' => '#slug']));
-                $this->addSitemapData('store', route($this->storeRouteName, ['slug' => '#slug']));
-            }
-
-            $this->sitemapConfigurator->store('xml', $localesKey[$index].'-sitemap', true, $localesKey[$index]);
+            $this->sitemapConfigurator->add(route('frontend::home'), '1');
+            $this->addSitemapData('category', route($this->categoryRouteName, ['slug' => '#slug']));
+            $this->addSitemapData('store', route($this->storeRouteName, ['slug' => '#slug']));
+            $this->addSitemapData('blog', route($this->blogRouteName, ['slug' => '#slug']));
+            $this->sitemapConfigurator->store('xml', $localesKey.'-sitemap', true, $localesKey);
 
         } catch (\Exception $ex) {
-            \Log::error("At locales " . $localesKey[$index] . ' ' . $ex->getMessage());
+            \Log::error("At locales " . $localesKey . ' ' . $ex->getMessage());
         }
 
         $this->sitemapConfigurator->resetUrlSet();
         $this->sitemapConfigurator->resetXmlString();
-        $this->multipleGenerate($localesKey, $index + 1);
     }
 
     private function changeConfigurationDatabase() {
@@ -130,5 +121,35 @@ class SitemapGeneratorController extends BaseController
         } catch (\Exception $exception) {
             echo "Load env error " . $exception->getMessage();
         }
+    }
+
+    public function generateAll () {
+
+        $configLocales = config('app.locales', []);
+        foreach ($configLocales as $keyLocale => $nameLocale) {
+            $url = config('app.domain') . '/' . $keyLocale . '/sitemap-generator';
+            $request = $this->curlRequest($url);
+        }
+    }
+
+    private function curlRequest($url, $data = [], $method = "GET" , $isAsync = false) {
+        $channel = curl_init();
+        curl_setopt($channel, CURLOPT_URL, $url);
+        curl_setopt($channel, CURLOPT_CUSTOMREQUEST, $method);
+        curl_setopt($channel, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($channel, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($channel, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
+        curl_setopt($channel, CURLOPT_SSL_VERIFYPEER, FALSE);
+        curl_setopt($channel, CURLOPT_FOLLOWLOCATION, false);
+        curl_setopt($channel, CURLOPT_MAXREDIRS, 3);
+        curl_setopt($channel, CURLOPT_POSTREDIR, 1);
+        curl_setopt($channel, CURLOPT_TIMEOUT, 10);
+        curl_setopt($channel, CURLOPT_CONNECTTIMEOUT, 10);
+        if($isAsync){
+            curl_setopt($channel, CURLOPT_NOSIGNAL, 1);
+            curl_setopt($channel, CURLOPT_TIMEOUT_MS, 400);
+        }
+        $response = curl_exec($channel);
+        return $response;
     }
 }
