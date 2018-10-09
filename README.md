@@ -37,11 +37,19 @@ return [
    sitemap file will be generated to folder with name as key at ``locales`` param config. Create folder name `sitemap` in folder `public` and 
    set `chmod 775` for this folder for create multiple locales folder.
    
-   Finally, go the below url to generate sitemap. File sitemap.xml will be generate automatically and save to public path.
+   Add this line to bottom of `app\config\app`: 
+   ```
+   'domain' => 'http://example.com'
+   ```
    
+   Finally, go the below url to generate sitemap. File sitemap.xml will be generate automatically and save to public path.
+   ``multiplesitemap`` is `false`: 
    ```
    //example.com/sitemap-generator
    ```
-   
+   Or ``multiplesitemap`` is `true`:
+   ```
+   //example.com/generator-all-sitemap
+   ```
    And can see result file with url `//example.com/sitemap.xml`
    
