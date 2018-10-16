@@ -65,7 +65,6 @@ class SitemapGeneratorController extends BaseController
         $localesKey = Request::segment(1);
         if (array_key_exists($localesKey, $localesConfig)) {
             $this->multipleGenerate($localesKey);
-            $this->sitemapConfigurator->mergeSitemap([$localesKey]);
         }
     }
 
@@ -141,6 +140,7 @@ class SitemapGeneratorController extends BaseController
                 $listLocaleSuccess[] = $nameLocale;
             }
         }
+        $this->sitemapConfigurator->mergeSitemap(array_keys($configLocales));
         return response()->json(['status' => 'successful', 'message' => 'List sitemap created: ' . implode(', ', $listLocaleSuccess)]);
     }
 

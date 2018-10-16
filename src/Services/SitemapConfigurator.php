@@ -89,7 +89,7 @@ class SitemapConfigurator
         foreach($locales as $locale) {
             if (file_exists($publicPath . 'sitemap/' . $locale)) {
                 $mergeXml = $mergeSitemapString;
-                $mergeXml = str_replace('#loc_content', route('frontend::home') . '/sitemap/' . $locale . '/' . $locale.'-sitemap.xml', $mergeXml);
+                $mergeXml = str_replace('#loc_content', config('app.domain') . '/sitemap/' . $locale . '/' . $locale.'-sitemap.xml', $mergeXml);
                 $mergeXml = str_replace('#lastmod', $lastMode, $mergeXml);
                 array_push($this->arrayUrlSet, $mergeXml);
             }
