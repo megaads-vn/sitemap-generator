@@ -8,8 +8,10 @@ class GeneratesitemapServiceProvider extends ServiceProvider
 {
     public function boot()
     {
-        if (!$this->app->routesAreCached()) {
-            include __DIR__ . '/routes.php';
+        if ( method_exists($this, 'routesAreCached') ) {
+            if (!$this->app->routesAreCached()) {
+                include __DIR__ . '/routes.php';
+            }
         }
         $this->publishConfig();
     }
