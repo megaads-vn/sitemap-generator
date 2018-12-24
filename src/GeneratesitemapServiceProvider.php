@@ -25,8 +25,10 @@ class GeneratesitemapServiceProvider extends ServiceProvider
 
     private function publishConfig()
     {
-        $path = $this->getConfigPath();
-        $this->publishes([$path => config_path('generate-sitemap.php')], 'config');
+        if ( method_exists($this, 'config_path') ) {
+            $path = $this->getConfigPath();
+            $this->publishes([$path => config_path('generate-sitemap.php')], 'config');
+        }
     }
 
     private function getConfigPath()
