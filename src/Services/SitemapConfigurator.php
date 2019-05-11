@@ -102,10 +102,10 @@ class SitemapConfigurator
         $this->arrayUrlSet = [];
         $mergeSitemapString = '<sitemap><loc>#loc_content</loc><lastmod>#lastmod</lastmod></sitemap>';
         $lastMode = date('Y-m-d');
-        foreach($locales as $locale) {
-            if (file_exists($publicPath . 'sitemap/' . $locale)) {
+        foreach($locales as $filePath) {
+            if (file_exists($publicPath . 'sitemap/' . $filePath)) {
                 $mergeXml = $mergeSitemapString;
-                $mergeXml = str_replace('#loc_content', config('app.domain') . '/sitemap/' . $locale . '/' . $locale.'-sitemap.xml', $mergeXml);
+                $mergeXml = str_replace('#loc_content', config('app.domain') . '/sitemap/' . $filePath, $mergeXml);
                 $mergeXml = str_replace('#lastmod', $lastMode, $mergeXml);
                 array_push($this->arrayUrlSet, $mergeXml);
             }
