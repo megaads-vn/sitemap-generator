@@ -3,7 +3,7 @@
 ## Install and Configuration
    Using composer command
    ```
-    composer require megaads/generate-sitemap
+    composer require megaads/sitemap-generator
 ```
    After composer install package complete, open file app.php and add below line to `providers`: 
    ```
