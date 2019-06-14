@@ -1,11 +1,11 @@
 {
-    "name": "megaads/generate-sitemap",
+    "name": "megaads/sitemap-generator",
     "description": "This package genernate sitemap.xml file automatically base on databse tables.",
     "license": "MIT",
     "authors": [
         {
-            "name": "Bach Nguyen",
-            "email": "bachnx2303@gmail.com"
+            "name": "MegaAds",
+            "email": "info@megaads.vn"
         }
     ],
     "minimum-stability": "stable",
