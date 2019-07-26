@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Request;
 use Megaads\Generatesitemap\Models\Categories;
 use Megaads\Generatesitemap\Models\Stores;
+use Illuminate\Support\Facades\Input;
 
 class SitemapGeneratorController extends BaseController
 {
@@ -33,7 +34,7 @@ class SitemapGeneratorController extends BaseController
      */
     public function generate()
     {
-        $isMultiple = config('generate-sitemap.multiplesitemap');
+        $isMultiple = Input::get('is_multiple', false);
         if (!$isMultiple) {
             $this->sitemapConfigurator->add(route('frontend::home'), '1');
             $stores = Stores::get(['slug']);
@@ -61,39 +62,21 @@ class SitemapGeneratorController extends BaseController
 
     public function multipleGenerateSitemap()
     {
-        $localesConfig = config('app.locales', []);
-        $localesKey = Request::segment(1);
-        if (array_key_exists($localesKey, $localesConfig)) {
-            $this->multipleGenerate($localesKey);
-        }
-    }
-
-    private function multipleGenerate($localesKey, $index = 0)
-    {
-        $this->loadDotEnv($localesKey);
-        $this->changeConfigurationDatabase();
+        $sitemapType = config('generate-sitemap.sitemaptype');
         try {
-            $this->sitemapConfigurator->add(route('frontend::home'), '1');
-            $this->addSitemapData('category', route($this->categoryRouteName, ['slug' => '#slug']));
-            $this->addSitemapData('store', route($this->storeRouteName, ['slug' => '#slug']));
-            $this->addSitemapData('blog', route($this->blogRouteName, ['slug' => '#slug']));
-            $this->sitemapConfigurator->store('xml', $localesKey . '-sitemap', true, $localesKey);
-
+            $mergePath = [];
+            foreach( $sitemapType as $key =>  $type ) {
+                $routeName = $type . 'RouteName';
+                $this->addSitemapData($type, route($this->$routeName, ['slug' => '#slug']));    
+                $this->sitemapConfigurator->store('xml', $type . '-sitemap', true, $key);
+                $this->sitemapConfigurator->resetUrlSet();
+                $this->sitemapConfigurator->resetXmlString();
+                $mergePath[] = $key . '/' . $type .'-sitemap.xml';
+            }
+            $this->sitemapConfigurator->mergeSitemap($mergePath);
         } catch (\Exception $ex) {
-            \Log::error("At locales " . $localesKey . ' ' . $ex->getMessage());
+            throw new \Exception("Error generate. " .  $ex->getMessage());
         }
-
-        $this->sitemapConfigurator->resetUrlSet();
-        $this->sitemapConfigurator->resetXmlString();
-    }
-
-    private function changeConfigurationDatabase()
-    {
-        $config = config('database.connections.mysql');
-        $config['database'] = getenv('DB_DATABASE');
-        $config['username'] = getenv('DB_USERNAME');
-        $config['password'] = getenv('DB_PASSWORD');
-        config()->set('database.connections.mysql', $config);
     }
 
     private function addSitemapData($table, $routeName, $columns = ['slug'])
@@ -116,16 +99,6 @@ class SitemapGeneratorController extends BaseController
             }
         } catch (\Exception $exception) {
             throw new \Exception("Error database connection. Please check again");
-        }
-    }
-
-    private function loadDotEnv($localEnv)
-    {
-        try {
-            $dotenv = new Dotenv(__DIR__ . '/../../../../../', '.' . $localEnv . '.env');
-            $dotenv->overload();
-        } catch (\Exception $exception) {
-            echo "Load env error " . $exception->getMessage();
         }
     }
 

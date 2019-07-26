@@ -15,13 +15,23 @@
    php artisan vendor:publish --provider="Megaads\Generatesitemap\GeneratesitemapServiceProvider"
    
 ```
-   After run publish command open file ``generate-sitemap.php``. It see like this: 
+   After run publish command open file ``generate-sitemap.php``. IF NOT, CAN USING COMMAND TO COPY 
+   ```
+   cp vendor/megaads/generate-sitemap/config/generate-sitemap.php config/generate-sitemap.php
+   ```
+   
+   It see like this: 
    
    ```
   
 return [
     'multiplesitemap' => false,
-
+    'defaultlocale' => '',
+    'sitemaptype' => [
+        'categories' => 'category', 
+        'stores' => 'store', 
+        'blogs' => 'blog'
+    ],
     'locales' => [
         'us' => 'United States',
         'uk' => 'United Kingdom',
@@ -44,10 +54,12 @@ return [
    
    Finally, go the below url to generate sitemap. File sitemap.xml will be generate automatically and save to public path.
    ``multiplesitemap`` is `false`: 
+   If separate sitemap to multiple file using param ``is_multiple=true`` on url when call it. (attension: config ``sitemaptype`` on file config).
    ```
    //example.com/sitemap-generator
+   //example.com/sitemap-generator?is_multiple=true
    ```
-   Or ``multiplesitemap`` is `true`:
+   Or ``multiplesitemap`` is `true`. This option allow to generate sitemap with multiple language.
    ```
    //example.com/generator-all-sitemap
    ```
