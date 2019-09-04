@@ -10,7 +10,7 @@ class GeneratesitemapServiceProvider extends ServiceProvider
     public function boot()
     {
         $framework = $this->checkFrameWork();
-        if ($framework && $framework['key'] == 'laravel/framework' && $framework['version'] <= 52 ) {
+        if ($framework && $framework['key'] == 'laravel/framework' && $framework['version'] >= 52 ) {
             include __DIR__ . '/routes.php';
         } else {  
             if ( method_exists($this, 'routesAreCached') ) {
@@ -31,10 +31,10 @@ class GeneratesitemapServiceProvider extends ServiceProvider
 
     private function publishConfig()
     {
-        if ( method_exists($this, 'config_path') ) {
+        // if ( method_exists($this, 'config_path') ) {
             $path = $this->getConfigPath();
             $this->publishes([$path => config_path('generate-sitemap.php')], 'config');
-        }
+        // }
     }
 
     private function getConfigPath()
