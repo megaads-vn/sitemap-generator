@@ -3,7 +3,6 @@ namespace Megaads\Generatesitemap;
 
 use Illuminate\Support\ServiceProvider;
 use Megaads\Generatesitemap\Services\SitemapConfigurator;
-use function GuzzleHttp\json_decode;
 
 class GeneratesitemapServiceProvider extends ServiceProvider
 {
