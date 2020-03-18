@@ -15,6 +15,7 @@ class SitemapGeneratorController extends BaseController
     protected $storeRouteName = 'frontend::store::listByStore';
     protected $categoryRouteName = 'frontend::category::listByCategory';
     protected $blogRouteName = 'frontend::blog::detail';
+    protected $couponRouteName = 'frontend::coupon::detail';
 
     protected $publicPath = null;
     private $sitemapConfigurator;
@@ -85,7 +86,6 @@ class SitemapGeneratorController extends BaseController
             $tableItems = DB::reconnect()
                 ->table($table)
                 ->get($columns);
-
             if (!empty($tableItems)) {
                 foreach ($tableItems as $item) {
                     if ($item->slug == 'root') continue;
@@ -94,7 +94,8 @@ class SitemapGeneratorController extends BaseController
                     $lastMode = date('Y-m-d');
                     $changeFreq = 'daily';
                     $route = str_replace('#slug', $item->slug, $routeName);
-                    $this->sitemapConfigurator->add($route, $piority, $lastMode, $changeFreq);
+                    $route = $this->formatRoute($route);
+                    $this->sitemapConfigurator->add(urldecode($route), $piority, $lastMode, $changeFreq);
                 }
             }
         } catch (\Exception $exception) {
@@ -115,6 +116,16 @@ class SitemapGeneratorController extends BaseController
         }
         $this->sitemapConfigurator->mergeSitemap(array_keys($configLocales));
         return response()->json(['status' => 'successful', 'message' => 'List sitemap created: ' . implode(', ', $listLocaleSuccess)]);
+    }
+
+    private function formatRoute($route) {
+        $parseUrl = parse_url($route);
+        $urlPaths = explode('/', $parseUrl['path']);
+        //Get last path to encode special characters
+        $lastUrlPath = end($urlPaths);
+        //Remove last path.
+        array_pop($urlPaths);
+        return $parseUrl['scheme']  . '://' . $parseUrl['host'] . join('/', $urlPaths) . '/' . urlencode($lastUrlPath);
     }
 
     private function curlRequest($url, $data = [], $method = "GET", $isAsync = false)

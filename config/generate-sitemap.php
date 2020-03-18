@@ -6,7 +6,8 @@ return [
     'sitemaptype' => [
         'categories' => 'category', 
         'stores' => 'store', 
-        'blogs' => 'blog'
+        'blogs' => 'blog',
+        'coupons' => 'coupon'
     ],
     'locales' => [
         'us' => 'United States',
