@@ -97,6 +97,7 @@ class SitemapConfigurator
 
     public function mergeSitemap($locales)
     {
+        $baseUrl = url('/');
         $publicPath = $this->publicPath;
         $this->addMergeXmlHead();
         $this->arrayUrlSet = [];
@@ -105,7 +106,7 @@ class SitemapConfigurator
         foreach($locales as $filePath) {
             if (file_exists($publicPath . 'sitemap/' . $filePath)) {
                 $mergeXml = $mergeSitemapString;
-                $mergeXml = str_replace('#loc_content', config('app.domain') . '/sitemap/' . $filePath, $mergeXml);
+                $mergeXml = str_replace('#loc_content', $baseUrl . '/sitemap/' . $filePath, $mergeXml);
                 $mergeXml = str_replace('#lastmod', $lastMode, $mergeXml);
                 array_push($this->arrayUrlSet, $mergeXml);
             }
