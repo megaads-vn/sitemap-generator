@@ -83,9 +83,12 @@ class SitemapGeneratorController extends BaseController
     private function addSitemapData($table, $routeName, $columns = ['slug'])
     {
         try {
-            $tableItems = DB::reconnect()
-                ->table($table)
-                ->get($columns);
+            $buildQuery = DB::reconnect()
+                            ->table($table);
+            if ($table == 'coupon') {
+                $buildQuery->where('status', 'active');
+            }
+            $tableItems =  $buildQuery->get($columns);
             if (!empty($tableItems)) {
                 foreach ($tableItems as $item) {
                     if ($item->slug == 'root') continue;
