@@ -9,11 +9,13 @@ use Illuminate\Support\Facades\Request;
 use Megaads\Generatesitemap\Models\Categories;
 use Megaads\Generatesitemap\Models\Stores;
 use Illuminate\Support\Facades\Input;
+use Megaads\Generatesitemap\Models\StoreKeyword;
 
 class SitemapGeneratorController extends BaseController
 {
     protected $storeRouteName = 'frontend::store::listByStore';
     protected $categoryRouteName = 'frontend::category::listByCategory';
+    protected $store_n_keywordRouteName = 'frontend::keyword';
     protected $blogRouteName = 'frontend::blog::detail';
     protected $couponRouteName = 'frontend::coupon::detail';
 
@@ -45,6 +47,15 @@ class SitemapGeneratorController extends BaseController
                 $changefreq = 'daily';
                 $this->sitemapConfigurator->add(route($this->storeRouteName, ['slug' => $store->slug]), $piority, $lastMode, $changefreq);
             }
+
+            $keywords = StoreKeyword::get(['slug']);
+            foreach ($keywords as $keyword) {
+                $piority = '0.8';
+                $lastMode = date('Y-m-d');
+                $changefreq = 'daily';
+                $this->sitemapConfigurator->add(route($this->store_n_keywordRouteName, ['slug' => $keyword->slug]), $piority, $lastMode, $changefreq);
+            }
+            $this->sitemapConfigurator->store('xml', 'sitemap');
 
             $categories = Categories::get(['slug']);
             foreach ($categories as $category) {

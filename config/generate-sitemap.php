@@ -7,7 +7,8 @@ return [
         'categories' => 'category', 
         'stores' => 'store', 
         'blogs' => 'blog',
-        'coupons' => 'coupon'
+        'coupons' => 'coupon',
+        'keywords' => 'store_n_keyword'
     ],
     'locales' => [
         'us' => 'United States',
