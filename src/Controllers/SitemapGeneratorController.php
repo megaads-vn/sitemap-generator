@@ -13,11 +13,13 @@ use Megaads\Generatesitemap\Models\StoreKeyword;
 
 class SitemapGeneratorController extends BaseController
 {
-    protected $storeRouteName = 'frontend::store::listByStore';
-    protected $categoryRouteName = 'frontend::category::listByCategory';
-    protected $store_n_keywordRouteName = 'frontend::keyword';
-    protected $blogRouteName = 'frontend::blog::detail';
-    protected $couponRouteName = 'frontend::coupon::detail';
+
+    protected $baseUrl = '';
+    protected $storeRouteName = '/store/';
+    protected $categoryRouteName = '/coupon-category/';
+    protected $store_n_keywordRouteName = '/';
+    protected $blogRouteName = '/blog-detail/';
+    protected $couponRouteName = '/coupons/';
 
     protected $publicPath = null;
     private $sitemapConfigurator;
@@ -27,6 +29,7 @@ class SitemapGeneratorController extends BaseController
      */
     public function __construct()
     {
+        $this->baseUrl = (($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https') . '://' . $_SERVER['HTTP_HOST'];
         $this->publicPath = base_path() . '/public';
         $this->sitemapConfigurator = app()->make('sitemapConfigurator');
     }
@@ -45,7 +48,7 @@ class SitemapGeneratorController extends BaseController
                 $piority = '0.8';
                 $lastMode = date('Y-m-d');
                 $changefreq = 'daily';
-                $this->sitemapConfigurator->add(route($this->storeRouteName, ['slug' => $store->slug]), $piority, $lastMode, $changefreq);
+                $this->sitemapConfigurator->add($this->baseUrl . $this->storeRouteName . $store->slug, $piority, $lastMode, $changefreq);
             }
 
             $keywords = StoreKeyword::get(['slug']);
@@ -53,7 +56,7 @@ class SitemapGeneratorController extends BaseController
                 $piority = '0.8';
                 $lastMode = date('Y-m-d');
                 $changefreq = 'daily';
-                $this->sitemapConfigurator->add(route($this->store_n_keywordRouteName, ['slug' => $keyword->slug]), $piority, $lastMode, $changefreq);
+                $this->sitemapConfigurator->add($this->baseUrl . $this->store_n_keywordRouteName . $keyword->slug, $lastMode, $changefreq);
             }
             $this->sitemapConfigurator->store('xml', 'sitemap');
 
@@ -62,7 +65,7 @@ class SitemapGeneratorController extends BaseController
                 $piority = '0.8';
                 $lastMode = date('Y-m-d');
                 $changefreq = 'daily';
-                $this->sitemapConfigurator->add(route($this->categoryRouteName, ['slug' => $category->slug]), $piority, $lastMode, $changefreq);
+                $this->sitemapConfigurator->add($this->baseUrl . $this->categoryRouteName . $category->slug, $piority, $lastMode, $changefreq);
             }
             $this->sitemapConfigurator->store('xml', 'sitemap');
         } else {
@@ -79,7 +82,7 @@ class SitemapGeneratorController extends BaseController
             $mergePath = [];
             foreach( $sitemapType as $key =>  $type ) {
                 $routeName = $type . 'RouteName';
-                $this->addSitemapData($type, route($this->$routeName, ['slug' => '#slug']));    
+                $this->addSitemapData($type, $this->$routeName);
                 $this->sitemapConfigurator->store('xml', $type . '-sitemap', true, $key);
                 $this->sitemapConfigurator->resetUrlSet();
                 $this->sitemapConfigurator->resetXmlString();
@@ -93,6 +96,7 @@ class SitemapGeneratorController extends BaseController
 
     private function addSitemapData($table, $routeName, $columns = ['slug'])
     {
+
         try {
             $buildQuery = DB::reconnect()
                             ->table($table);
@@ -107,7 +111,7 @@ class SitemapGeneratorController extends BaseController
                     $piority = "0.8";
                     $lastMode = date('Y-m-d');
                     $changeFreq = 'daily';
-                    $route = str_replace('#slug', $item->slug, $routeName);
+                    $route =  $this->baseUrl . $routeName . $item->slug;
                     $route = $this->formatRoute($route);
                     $this->sitemapConfigurator->add(urldecode($route), $piority, $lastMode, $changeFreq);
                 }
@@ -139,6 +143,7 @@ class SitemapGeneratorController extends BaseController
         $lastUrlPath = end($urlPaths);
         //Remove last path.
         array_pop($urlPaths);
+
         return $parseUrl['scheme']  . '://' . $parseUrl['host'] . join('/', $urlPaths) . '/' . urlencode($lastUrlPath);
     }
 
