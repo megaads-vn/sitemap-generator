@@ -11,6 +11,7 @@ use Megaads\Generatesitemap\Models\Stores;
 use Illuminate\Support\Facades\Input;
 use Megaads\Generatesitemap\Models\StoreKeyword;
 use Schema;
+use URL;
 
 class SitemapGeneratorController extends BaseController
 {
@@ -30,7 +31,7 @@ class SitemapGeneratorController extends BaseController
      */
     public function __construct()
     {
-        $this->baseUrl = (($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https') . '://' . $_SERVER['HTTP_HOST'];
+        $this->baseUrl = URL::to('/');
         $this->publicPath = base_path() . '/public';
         $this->sitemapConfigurator = app()->make('sitemapConfigurator');
     }
