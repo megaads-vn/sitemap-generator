@@ -10,6 +10,7 @@ use Megaads\Generatesitemap\Models\Categories;
 use Megaads\Generatesitemap\Models\Stores;
 use Illuminate\Support\Facades\Input;
 use Megaads\Generatesitemap\Models\StoreKeyword;
+use Schema;
 
 class SitemapGeneratorController extends BaseController
 {
@@ -51,14 +52,16 @@ class SitemapGeneratorController extends BaseController
                 $this->sitemapConfigurator->add($this->baseUrl . $this->storeRouteName . $store->slug, $piority, $lastMode, $changefreq);
             }
 
-            $keywords = StoreKeyword::get(['slug']);
-            foreach ($keywords as $keyword) {
-                $piority = '0.8';
-                $lastMode = date('Y-m-d');
-                $changefreq = 'daily';
-                $this->sitemapConfigurator->add($this->baseUrl . $this->store_n_keywordRouteName . $keyword->slug, $lastMode, $changefreq);
+            if(Schema::hasTable('store_n_keyword')) {
+                $keywords = StoreKeyword::get(['slug']);
+                foreach ($keywords as $keyword) {
+                    $piority = '0.8';
+                    $lastMode = date('Y-m-d');
+                    $changefreq = 'daily';
+                    $this->sitemapConfigurator->add($this->baseUrl . $this->store_n_keywordRouteName . $keyword->slug, $lastMode, $changefreq);
+                }
+                $this->sitemapConfigurator->store('xml', 'sitemap');
             }
-            $this->sitemapConfigurator->store('xml', 'sitemap');
 
             $categories = Categories::get(['slug']);
             foreach ($categories as $category) {
@@ -81,12 +84,14 @@ class SitemapGeneratorController extends BaseController
         try {
             $mergePath = [];
             foreach( $sitemapType as $key =>  $type ) {
-                $routeName = $type . 'RouteName';
-                $this->addSitemapData($type, $this->$routeName);
-                $this->sitemapConfigurator->store('xml', $type . '-sitemap', true, $key);
-                $this->sitemapConfigurator->resetUrlSet();
-                $this->sitemapConfigurator->resetXmlString();
-                $mergePath[] = $key . '/' . $type .'-sitemap.xml';
+                if(Schema::hasTable($type)) {
+                    $routeName = $type . 'RouteName';
+                    $this->addSitemapData($type, $this->$routeName);
+                    $this->sitemapConfigurator->store('xml', $type . '-sitemap', true, $key);
+                    $this->sitemapConfigurator->resetUrlSet();
+                    $this->sitemapConfigurator->resetXmlString();
+                    $mergePath[] = $key . '/' . $type .'-sitemap.xml';
+                }
             }
             $this->sitemapConfigurator->mergeSitemap($mergePath);
         } catch (\Exception $ex) {
