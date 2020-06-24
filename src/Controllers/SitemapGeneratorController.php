@@ -109,6 +109,9 @@ class SitemapGeneratorController extends BaseController
             if ($table == 'coupon') {
                 $buildQuery->where('status', 'active');
             }
+            if ($table == 'category') {
+                $this->sitemapConfigurator->add(route('frontend::home'), 1, date('Y-m-d'), 'daily');
+            }
             $tableItems =  $buildQuery->get($columns);
             if (!empty($tableItems)) {
                 foreach ($tableItems as $item) {
