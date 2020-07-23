@@ -18,6 +18,7 @@ class GeneratesitemapServiceProvider extends ServiceProvider
                 }
             }
         }
+        $this->registerHelpers();
         $this->publishConfig();
     }
 
@@ -30,10 +31,22 @@ class GeneratesitemapServiceProvider extends ServiceProvider
 
     private function publishConfig()
     {
-        // if ( method_exists($this, 'config_path') ) {
+        if ( method_exists($this, 'config_path') ) {
             $path = $this->getConfigPath();
             $this->publishes([$path => config_path('generate-sitemap.php')], 'config');
-        // }
+        }
+    }
+
+     /**
+     * Register helpers file
+     */
+    public function registerHelpers()
+    {
+        $file = __DIR__ . '/helpers.php';
+        if (file_exists($file))
+        {
+            require $file;
+        }
     }
 
     private function getConfigPath()
