@@ -31,7 +31,7 @@ class GeneratesitemapServiceProvider extends ServiceProvider
 
     private function publishConfig()
     {
-        if ( method_exists($this, 'config_path') ) {
+        if (function_exists('config_path')) {
             $path = $this->getConfigPath();
             $this->publishes([$path => config_path('generate-sitemap.php')], 'config');
         }
@@ -45,7 +45,7 @@ class GeneratesitemapServiceProvider extends ServiceProvider
         $file = __DIR__ . '/helpers.php';
         if (file_exists($file))
         {
-            require $file;
+            require_once $file;
         }
     }
 

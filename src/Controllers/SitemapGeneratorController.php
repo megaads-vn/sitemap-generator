@@ -2,13 +2,14 @@
 
 namespace Megaads\Generatesitemap\Controllers;
 
+use Config;
 use Dotenv\Dotenv;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Request;
 use Megaads\Generatesitemap\Models\Categories;
 use Megaads\Generatesitemap\Models\Stores;
 use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Route;
 use Megaads\Generatesitemap\Models\StoreKeyword;
 use Schema;
 use URL;
@@ -25,6 +26,7 @@ class SitemapGeneratorController extends BaseController
 
     protected $publicPath = null;
     private $sitemapConfigurator;
+    protected $routeConfig = NULL;
 
     /***
      * SitemapGeneratorController constructor.
@@ -34,6 +36,7 @@ class SitemapGeneratorController extends BaseController
         $this->baseUrl = URL::to('/');
         $this->publicPath = base_path() . '/public';
         $this->sitemapConfigurator = app()->make('sitemapConfigurator');
+        $this->routeConfig = config('generate-sitemap.routes');
     }
 
     /***
@@ -50,7 +53,8 @@ class SitemapGeneratorController extends BaseController
                 $piority = '0.8';
                 $lastMode = date('Y-m-d');
                 $changefreq = 'daily';
-                $this->sitemapConfigurator->add($this->baseUrl . $this->storeRouteName . $store->slug, $piority, $lastMode, $changefreq);
+                $url = route($this->routeConfig['store'], ['slug' => $store->slug]);
+                $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);
             }
 
             if(Schema::hasTable('store_n_keyword')) {
@@ -69,7 +73,8 @@ class SitemapGeneratorController extends BaseController
                 $piority = '0.8';
                 $lastMode = date('Y-m-d');
                 $changefreq = 'daily';
-                $this->sitemapConfigurator->add($this->baseUrl . $this->categoryRouteName . $category->slug, $piority, $lastMode, $changefreq);
+                $url = route($this->routeConfig['category'], ['slug' => $category->slug]);
+                $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);
             }
             $this->sitemapConfigurator->store('xml', 'sitemap');
         } else {
@@ -86,8 +91,8 @@ class SitemapGeneratorController extends BaseController
             $mergePath = [];
             foreach( $sitemapType as $key =>  $type ) {
                 if(Schema::hasTable($type)) {
-                    $routeName = $type . 'RouteName';
-                    $this->addSitemapData($type, $this->$routeName);
+                    $routeName = $this->routeConfig[$type];
+                    $this->addSitemapData($type, $routeName);
                     $this->sitemapConfigurator->store('xml', $type . '-sitemap', true, $key);
                     $this->sitemapConfigurator->resetUrlSet();
                     $this->sitemapConfigurator->resetXmlString();
@@ -116,17 +121,19 @@ class SitemapGeneratorController extends BaseController
             if (!empty($tableItems)) {
                 foreach ($tableItems as $item) {
                     if ($item->slug == 'root') continue;
-                    $route = "";
-                    $piority = "0.8";
-                    $lastMode = date('Y-m-d');
-                    $changeFreq = 'daily';
-                    $route =  $this->baseUrl . $routeName . $item->slug;
-                    $route = $this->formatRoute($route);
-                    $this->sitemapConfigurator->add(urldecode($route), $piority, $lastMode, $changeFreq);
+                    if (Route::has($routeName)) {
+                        $route = "";
+                        $piority = "0.8";
+                        $lastMode = date('Y-m-d');
+                        $changeFreq = 'daily';
+                        $route =  route($routeName, ['slug' => $item->slug]);
+                        $route = $this->formatRoute($route);
+                        $this->sitemapConfigurator->add(urldecode($route), $piority, $lastMode, $changeFreq);
+                    }
                 }
             }
         } catch (\Exception $exception) {
-            throw new \Exception("Error database connection. Please check again");
+            throw new \Exception("Error database connection. Please check again.");
         }
     }
 
