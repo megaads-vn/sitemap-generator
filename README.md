@@ -9,12 +9,12 @@
    ```
     Megaads\Generatesitemap\GeneratesitemapServiceProvider::class
    ```
-   Then run this command to publish package config to application config folder: 
+   Then run this command to publish package config to application config folder (NOTE: Add option `--force` for overwrite config file. Be sure backup your config file before run with `--force` option): 
    
    ```
    php artisan vendor:publish --provider="Megaads\Generatesitemap\GeneratesitemapServiceProvider"
    
-```
+  ```
    After run publish command open file ``generate-sitemap.php``. IF NOT, CAN USING COMMAND TO COPY 
    ```
    cp vendor/megaads/generate-sitemap/config/generate-sitemap.php config/generate-sitemap.php
@@ -69,6 +69,10 @@ return [
    Or ``multiplesitemap`` is `true`. This option allow to generate sitemap with multiple language.
    ```
    //example.com/generator-all-sitemap
+   ```
+   Or call to url below for generate all sitemap type (blogs, categories...) group by locales:
+   ```
+   //example.com/sitemap/generator-by-locale
    ```
    And can see result file with url `//example.com/sitemap.xml`
    

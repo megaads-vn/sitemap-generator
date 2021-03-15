@@ -46,6 +46,7 @@ class SitemapGeneratorController extends BaseController
     public function generate()
     {
         $isMultiple = Input::get('is_multiple', false);
+        $isByLocales = Input::get('multiple_locales', false);
         if (!$isMultiple) {
             $this->sitemapConfigurator->add(route('frontend::home'), '1');
             $stores = Stores::get(['slug']);
@@ -77,6 +78,8 @@ class SitemapGeneratorController extends BaseController
                 $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);
             }
             $this->sitemapConfigurator->store('xml', 'sitemap');
+        } else if ($isByLocales && $isMultiple) {
+            $this->multipleByLocales();
         } else {
             $this->multipleGenerateSitemap();
         }
@@ -105,9 +108,67 @@ class SitemapGeneratorController extends BaseController
         }
     }
 
-    private function addSitemapData($table, $routeName, $columns = ['slug'])
-    {
+    public function sitemapByLocales() {
+        $listLocaleSuccess = [];
+        $listLocaleFail = [];
+        $locales = config('generate-sitemap.locales');
+        $mergePath = [];
+        foreach ($locales as $key => $name) {
+            $this->sitemapConfigurator->store('xml', $key, true, '');
+            $this->sitemapConfigurator->resetUrlSet();
+            $this->sitemapConfigurator->resetXmlString();
+            $mergePath[] = $key . '.xml';
+            $url = config('app.domain') . '/' . $key . '/sitemap-generator?is_multiple=true&multiple_locales=true';
+            $request = $this->curlRequest($url);
+            if (isset($request->status) && $request->status == 'successful') {
+                $listLocaleSuccess[] = $name;
+            } else {
+                $listLocaleFail[$name] = $request;
+            }
+        }
+        $this->sitemapConfigurator->mergeSitemap($mergePath);
+        return response()->json(['status' => 'successful', 'message' => 'List sitemap created: ' . implode(', ', $listLocaleSuccess), 'fail' => $listLocaleFail]);
+    }
 
+    private function multipleByLocales() {
+        $locales = config('generate-sitemap.locales');
+        $types = config('generate-sitemap.sitemaptype');
+        try {
+            $uri = array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '';
+            preg_match('/\/([A-Za-z]+)(\/*)/', $uri, $locales);
+            $locale = $locales[1];
+            $mergeChildPath = [];
+            foreach ($types as $key => $type) {
+                if (Schema::hasTable($type)) {
+                    $routeName = $this->routeConfig[$type];
+                    $this->addSitemapData($type, $routeName, ['slug'], $locale);
+                    $this->sitemapConfigurator->store('xml', $key, true, $locale . '/');
+                    $this->sitemapConfigurator->resetUrlSet();
+                    $this->sitemapConfigurator->resetXmlString();
+                    $mergeChildPath[] = $locale . '/' . $key . '.xml';
+                } else if ($key == 'menu') {
+                    $staticRoutes = config('generate-sitemap.' . $type);
+                    foreach ($staticRoutes as $routeName) {
+                        $piority = "0.8";
+                        $lastMode = date('Y-m-d');
+                        $changeFreq = 'daily';
+                        $route =  route($routeName);
+                        $this->sitemapConfigurator->add($route, $piority, $lastMode, $changeFreq);
+                    }
+                    $this->sitemapConfigurator->store('xml', $key, true, $locale . '/');
+                    $this->sitemapConfigurator->resetUrlSet();
+                    $this->sitemapConfigurator->resetXmlString();
+                    $mergeChildPath[] = $locale . '/' . $key . '.xml';
+                }
+            }
+            $this->sitemapConfigurator->mergeSitemap($mergeChildPath, 'sitemap/' . $locale);
+        } catch (\Exception $ex) {
+            throw new \Exception("Error generate. " . $ex->getMessage());
+        }
+    }
+
+    private function addSitemapData($table, $routeName, $columns = ['slug'])
+    {   
         try {
             $buildQuery = DB::reconnect()
                             ->table($table);

@@ -95,7 +95,7 @@ class SitemapConfigurator
         fclose($openFile);
     }
 
-    public function mergeSitemap($locales)
+    public function mergeSitemap($locales, $mergeFile = 'sitemap')
     {
         $baseUrl = url('/');
         $publicPath = $this->publicPath;
@@ -111,8 +111,7 @@ class SitemapConfigurator
                 array_push($this->arrayUrlSet, $mergeXml);
             }
         }
-
-        $this->store('xml', 'sitemap');
+        $this->store('xml', $mergeFile);
     }
 
 
