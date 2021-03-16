@@ -13,4 +13,5 @@ Route::group(['prefix' => $locale, 'namespace' => '\Megaads\Generatesitemap\Cont
 });
 Route::group(['namespace' => '\Megaads\Generatesitemap\Controllers'], function() {
     Route::get('/generator-all-sitemap', 'SitemapGeneratorController@generateAll');
+    Route::get('/sitemap/generator-by-locale', 'SitemapGeneratorController@sitemapByLocales');
 });
