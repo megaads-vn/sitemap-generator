@@ -114,10 +114,10 @@ class SitemapGeneratorController extends BaseController
         $locales = config('generate-sitemap.locales');
         $mergePath = [];
         foreach ($locales as $key => $name) {
-            $this->sitemapConfigurator->store('xml', $key, true, '');
+            $this->sitemapConfigurator->store('xml', 'sitemap', true, $key);
             $this->sitemapConfigurator->resetUrlSet();
             $this->sitemapConfigurator->resetXmlString();
-            $mergePath[] = $key . '.xml';
+            $mergePath[] = $key . '/sitemap.xml';
             $url = config('app.domain') . '/' . $key . '/sitemap-generator?is_multiple=true&multiple_locales=true';
             $request = $this->curlRequest($url);
             if (isset($request->status) && $request->status == 'successful') {
@@ -137,15 +137,11 @@ class SitemapGeneratorController extends BaseController
             $uri = array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '';
             preg_match('/\/([A-Za-z]+)(\/*)/', $uri, $locales);
             $locale = $locales[1];
-            $mergeChildPath = [];
             foreach ($types as $key => $type) {
                 if (Schema::hasTable($type)) {
                     $routeName = $this->routeConfig[$type];
                     $this->addSitemapData($type, $routeName, ['slug'], $locale);
-                    $this->sitemapConfigurator->store('xml', $key, true, $locale . '/');
-                    $this->sitemapConfigurator->resetUrlSet();
-                    $this->sitemapConfigurator->resetXmlString();
-                    $mergeChildPath[] = $locale . '/' . $key . '.xml';
+                    
                 } else if ($key == 'menu') {
                     $staticRoutes = config('generate-sitemap.' . $type);
                     foreach ($staticRoutes as $routeName) {
@@ -155,13 +151,11 @@ class SitemapGeneratorController extends BaseController
                         $route =  route($routeName);
                         $this->sitemapConfigurator->add($route, $piority, $lastMode, $changeFreq);
                     }
-                    $this->sitemapConfigurator->store('xml', $key, true, $locale . '/');
-                    $this->sitemapConfigurator->resetUrlSet();
-                    $this->sitemapConfigurator->resetXmlString();
-                    $mergeChildPath[] = $locale . '/' . $key . '.xml';
                 }
             }
-            $this->sitemapConfigurator->mergeSitemap($mergeChildPath, 'sitemap/' . $locale);
+            $this->sitemapConfigurator->store('xml', 'sitemap', true, $locale . '/');
+            $this->sitemapConfigurator->resetUrlSet();
+            $this->sitemapConfigurator->resetXmlString();
         } catch (\Exception $ex) {
             throw new \Exception("Error generate. " . $ex->getMessage());
         }
