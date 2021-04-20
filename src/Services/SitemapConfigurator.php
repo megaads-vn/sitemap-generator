@@ -74,7 +74,12 @@ class SitemapConfigurator
     {
         $xmlFile = $this->publicPath . $name . '.' . $type;
         if ($isMultiple) {
-            $localeFolder = $this->publicPath . 'sitemap/' . $locale;
+            $sitemapFolder = config('generate-sitemap.not_show_folder');
+            $folder = 'sitemap/';
+            if ($sitemapFolder) {
+                $folder = '';
+            }
+            $localeFolder = $this->publicPath . $folder . $locale;
             if (!file_exists($localeFolder)) {
                 mkdir($localeFolder, 0777, true);
             }
@@ -98,15 +103,20 @@ class SitemapConfigurator
     public function mergeSitemap($locales, $mergeFile = 'sitemap')
     {
         $baseUrl = url('/');
+        $sitemapFolder = config('generate-sitemap.not_show_folder');
+        $folder = 'sitemap/';
+        if ($sitemapFolder) {
+            $folder = '';
+        }
         $publicPath = $this->publicPath;
         $this->addMergeXmlHead();
         $this->arrayUrlSet = [];
         $mergeSitemapString = '<sitemap><loc>#loc_content</loc><lastmod>#lastmod</lastmod></sitemap>';
         $lastMode = date('Y-m-d');
         foreach($locales as $filePath) {
-            if (file_exists($publicPath . 'sitemap/' . $filePath)) {
+            if (file_exists($publicPath . $folder . $filePath)) {
                 $mergeXml = $mergeSitemapString;
-                $mergeXml = str_replace('#loc_content', $baseUrl . '/sitemap/' . $filePath, $mergeXml);
+                $mergeXml = str_replace('#loc_content', $baseUrl . '/' . $folder . $filePath, $mergeXml);
                 $mergeXml = str_replace('#lastmod', $lastMode, $mergeXml);
                 array_push($this->arrayUrlSet, $mergeXml);
             }
