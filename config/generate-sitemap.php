@@ -35,5 +35,5 @@ return [
         'terms' => 'frontend::home::terms-of-use',
         'privacy' => 'frontend::home::privacy-policy'
     ],
-    'not_show_folder' => false,
+    'is_save_storage' => false,
 ];
