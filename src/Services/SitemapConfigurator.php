@@ -75,7 +75,10 @@ class SitemapConfigurator
     {
         $xmlFile = $this->publicPath . $name . '.' . $type;
         if ($isMultiple) {
-            $localeFolder = $this->storagePath . $locale;
+            $localeFolder = $this->publicPath . 'sitemap/' . $locale;
+            if (config('generate-sitemap.is_save_storage')) {
+                $localeFolder = $this->storagePath . $locale;
+            }
             if (!file_exists($localeFolder)) {
                 mkdir($localeFolder, 0777, true);
             }
