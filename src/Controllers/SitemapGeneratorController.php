@@ -169,6 +169,9 @@ class SitemapGeneratorController extends BaseController
             if ($table == 'coupon') {
                 $buildQuery->where('status', 'active');
             }
+            if ($table == 'store_n_keyword') {
+                $buildQuery->where('visibility', 'visible');
+            }
             if ($table == 'category') {
                 $this->sitemapConfigurator->add(route('frontend::home'), 1, date('Y-m-d'), 'daily');
             }
