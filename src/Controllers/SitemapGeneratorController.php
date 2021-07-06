@@ -54,7 +54,7 @@ class SitemapGeneratorController extends BaseController
                 $piority = '0.8';
                 $lastMode = date('Y-m-d');
                 $changefreq = 'daily';
-                $url = route($this->routeConfig['store'], ['slug' => $store->slug]);
+                $url = route($this->routeConfig['store'], ['slug' => htmlspecialchars($store->slug)]);
                 $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);
             }
 
@@ -64,7 +64,7 @@ class SitemapGeneratorController extends BaseController
                     $piority = '0.8';
                     $lastMode = date('Y-m-d');
                     $changefreq = 'daily';
-                    $this->sitemapConfigurator->add($this->baseUrl . $this->store_n_keywordRouteName . $keyword->slug, $lastMode, $changefreq);
+                    $this->sitemapConfigurator->add($this->baseUrl . $this->store_n_keywordRouteName . htmlspecialchars($keyword->slug), $lastMode, $changefreq);
                 }
                 $this->sitemapConfigurator->store('xml', 'sitemap');
             }
@@ -74,7 +74,7 @@ class SitemapGeneratorController extends BaseController
                 $piority = '0.8';
                 $lastMode = date('Y-m-d');
                 $changefreq = 'daily';
-                $url = route($this->routeConfig['category'], ['slug' => $category->slug]);
+                $url = route($this->routeConfig['category'], ['slug' => htmlspecialchars($category->slug)]);
                 $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);
             }
             $this->sitemapConfigurator->store('xml', 'sitemap');
@@ -184,7 +184,7 @@ class SitemapGeneratorController extends BaseController
                         $piority = "0.8";
                         $lastMode = date('Y-m-d');
                         $changeFreq = 'daily';
-                        $route =  route($routeName, ['slug' => $item->slug]);
+                        $route =  route($routeName, ['slug' => htmlspecialchars($item->slug)]);
                         $route = $this->formatRoute($route);
                         $this->sitemapConfigurator->add(urldecode($route), $piority, $lastMode, $changeFreq);
                     }
