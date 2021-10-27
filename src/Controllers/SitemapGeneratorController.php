@@ -117,7 +117,7 @@ class SitemapGeneratorController extends BaseController
             $this->sitemapConfigurator->store('xml', 'sitemap', true, $key);
             $this->sitemapConfigurator->resetUrlSet();
             $this->sitemapConfigurator->resetXmlString();
-            $mergePath[] = $key . '/sitemap.xml';
+                $mergePath[] = $key . '/sitemap.xml';
             $url = config('app.domain') . '/' . $key . '/sitemap-generator?is_multiple=true&multiple_locales=true';
             $request = $this->curlRequest($url);
             if (isset($request->status) && $request->status == 'successful') {
@@ -126,7 +126,7 @@ class SitemapGeneratorController extends BaseController
                 $listLocaleFail[$name] = $request;
             }
         }
-        $this->sitemapConfigurator->mergeSitemap($mergePath);
+        $this->sitemapConfigurator->mergeSitemap($mergePath,'sitemap_index');
         return response()->json(['status' => 'successful', 'message' => 'List sitemap created: ' . implode(', ', $listLocaleSuccess), 'fail' => $listLocaleFail]);
     }
 

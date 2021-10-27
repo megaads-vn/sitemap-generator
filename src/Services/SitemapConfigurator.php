@@ -115,6 +115,9 @@ class SitemapConfigurator
         $lastMode = date('Y-m-d');
         foreach($locales as $filePath) {
             if (file_exists($path . $filePath)) {
+                if (substr($filePath,0,2) == 'us'){
+                    $filePath = substr($filePath,3);
+                }
                 $mergeXml = $mergeSitemapString;
                 $mergeXml = str_replace('#loc_content', $basePath . $filePath, $mergeXml);
                 $mergeXml = str_replace('#lastmod', $lastMode, $mergeXml);
