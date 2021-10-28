@@ -141,7 +141,7 @@ class SitemapGeneratorController extends BaseController
             $uri = array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '';
             preg_match('/\/([A-Za-z]+)(\/*)/', $uri, $matches);
             $locale = $matches[1];
-            if (!in_array($locale,$locales)){
+            if (!isset($locales[$locale])){
                 $locale = 'us';
             }
             foreach ($types as $key => $type) {
