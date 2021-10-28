@@ -117,8 +117,12 @@ class SitemapGeneratorController extends BaseController
             $this->sitemapConfigurator->store('xml', 'sitemap', true, $key);
             $this->sitemapConfigurator->resetUrlSet();
             $this->sitemapConfigurator->resetXmlString();
-                $mergePath[] = $key . '/sitemap.xml';
-            $url = config('app.domain') . '/' . $key . '/sitemap-generator?is_multiple=true&multiple_locales=true';
+            $mergePath[] = $key . '/sitemap.xml';
+            if ($key == 'us'){
+                $url = config('app.domain') . '/sitemap-generator?is_multiple=true&multiple_locales=true';
+            }else{
+                $url = config('app.domain') . '/' . $key . '/sitemap-generator?is_multiple=true&multiple_locales=true';
+            }
             $request = $this->curlRequest($url);
             if (isset($request->status) && $request->status == 'successful') {
                 $listLocaleSuccess[] = $name;
@@ -137,11 +141,14 @@ class SitemapGeneratorController extends BaseController
             $uri = array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '';
             preg_match('/\/([A-Za-z]+)(\/*)/', $uri, $locales);
             $locale = $locales[1];
+            if (!in_array($locale,$locales)){
+                $locale = 'us';
+            }
             foreach ($types as $key => $type) {
                 if (Schema::hasTable($type)) {
                     $routeName = $this->routeConfig[$type];
-                    $this->addSitemapData($type, $routeName, ['slug'], $locale);
-                    
+                    $this->addSitemapData($type, $routeName, ['slug']);
+
                 } else if ($key == 'menu') {
                     $staticRoutes = config('generate-sitemap.' . $type);
                     foreach ($staticRoutes as $routeName) {
@@ -162,10 +169,10 @@ class SitemapGeneratorController extends BaseController
     }
 
     private function addSitemapData($table, $routeName, $columns = ['slug'])
-    {   
+    {
         try {
             $buildQuery = DB::reconnect()
-                            ->table($table);
+                ->table($table);
             if ($table == 'coupon') {
                 $buildQuery->where('status', 'active');
             }
