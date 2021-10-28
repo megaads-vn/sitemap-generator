@@ -139,8 +139,8 @@ class SitemapGeneratorController extends BaseController
         $types = config('generate-sitemap.sitemaptype');
         try {
             $uri = array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '';
-            preg_match('/\/([A-Za-z]+)(\/*)/', $uri, $locales);
-            $locale = $locales[1];
+            preg_match('/\/([A-Za-z]+)(\/*)/', $uri, $matches);
+            $locale = $matches[1];
             if (!in_array($locale,$locales)){
                 $locale = 'us';
             }
