@@ -337,9 +337,6 @@ class SitemapGeneratorController extends BaseController
         if (count($stores) > 0) {
             $count = 0;
             foreach ($stores as $item) {
-                if ($count > 50) {
-                    break;
-                }
                 $count++;
                 $firstChar = strtolower($item->slug[0]);
                 if (is_numeric($firstChar)) {
@@ -360,10 +357,23 @@ class SitemapGeneratorController extends BaseController
     {
         $limit = 200;
         $total = Blog::where('status', Blog::STATUS_ACTIVE)->count();
+        $path = [];
         if ($total > 0) {
             $page = ceil($total / $limit);
-            $this->getBlog(0, $limit, $page);
-            $mergePath[] = '/blog.xml';
+            $this->getBlog(0, $limit, $page, $path);
+            if (count($path) > 0) {
+                foreach ($path as $item) {
+                    $piority = '0.8';
+                    $lastMode = date('Y-m-d');
+                    $changefreq = 'daily';
+                    $url = $item;
+                    $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);   
+                }
+                $this->sitemapConfigurator->store('xml', 'blog', true, '', '');
+                $this->sitemapConfigurator->resetUrlSet();
+                $this->sitemapConfigurator->resetXmlString();
+                $mergePath[] = '/blog.xml';
+            }
         }
     }
 
@@ -371,7 +381,7 @@ class SitemapGeneratorController extends BaseController
      * 
      * 
      */
-    protected function getBlog ($page, $limit, $total)
+    protected function getBlog ($page, $limit, $total, &$path)
     {
         if ($total < ($page + 1)) {
             return true;
@@ -382,18 +392,11 @@ class SitemapGeneratorController extends BaseController
                     ->get(['slug']);
         if (count($blogs) > 0) {
             foreach ($blogs as $item) {
-                $piority = '0.8';
-                $lastMode = date('Y-m-d');
-                $changefreq = 'daily';
-                $url = route($this->routeConfig['blog'], ['slug' => htmlspecialchars($item->slug)]);
-                $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);   
+                $path[] = route($this->routeConfig['blog'], ['slug' => htmlspecialchars($item->slug)]);
             }
-            $this->sitemapConfigurator->store('xml', 'blog', true, '', '');
-            $this->sitemapConfigurator->resetUrlSet();
-            $this->sitemapConfigurator->resetXmlString();
         }
         $page = $page + 1;
-        $this->getBlog($page, $limit, $total);
+        $this->getBlog($page, $limit, $total, $path);
     }
 
     /**
@@ -403,10 +406,23 @@ class SitemapGeneratorController extends BaseController
     {
         $limit = 200;
         $total = Category::where('status', Category::STATUS_ENABLE)->count();
+        $path = [];
         if ($total > 0) {
             $page = ceil($total / $limit);
-            $this->getCategory(0, $limit, $page);
-            $mergePath[] = '/categories.xml';
+            $this->getCategory(0, $limit, $page, $path);
+            if (count($path) > 0) {
+                foreach ($path as $item) {
+                    $piority = '0.8';
+                    $lastMode = date('Y-m-d');
+                    $changefreq = 'daily';
+                    $url = $item;
+                    $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);   
+                }
+                $this->sitemapConfigurator->store('xml', 'categories', true, '', '');
+                $this->sitemapConfigurator->resetUrlSet();
+                $this->sitemapConfigurator->resetXmlString();
+                $mergePath[] = '/categories.xml';
+            }
         }
     }
 
@@ -414,7 +430,7 @@ class SitemapGeneratorController extends BaseController
      * 
      * 
      */
-    protected function getCategory ($page, $limit, $total)
+    protected function getCategory ($page, $limit, $total, &$path)
     {
         if ($total < ($page + 1)) {
             return true;
@@ -425,18 +441,11 @@ class SitemapGeneratorController extends BaseController
                     ->get(['slug']);
         if (count($categories) > 0) {
             foreach ($categories as $item) {
-                $piority = '0.8';
-                $lastMode = date('Y-m-d');
-                $changefreq = 'daily';
-                $url = route($this->routeConfig['category'], ['slug' => htmlspecialchars($item->slug)]);
-                $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);   
+                $path[] = route($this->routeConfig['category'], ['slug' => htmlspecialchars($item->slug)]);
             }
-            $this->sitemapConfigurator->store('xml', 'categories', true, '', '');
-            $this->sitemapConfigurator->resetUrlSet();
-            $this->sitemapConfigurator->resetXmlString();
         }
         $page = $page + 1;
-        $this->getCategory($page, $limit, $total);
+        $this->getCategory($page, $limit, $total, $path);
     }
 
     /**
@@ -446,10 +455,23 @@ class SitemapGeneratorController extends BaseController
     {
         $limit = 200;
         $total = StoreKeyword::count();
+        $path = [];
         if ($total > 0) {
             $page = ceil($total / $limit);
-            $this->getKeypage(0, $limit, $page);
-            $mergePath[] = '/keypages.xml';
+            $this->getKeypage(0, $limit, $page, $path);
+            if (count($path) > 0) {
+                foreach ($path as $item) {
+                    $piority = '0.8';
+                    $lastMode = date('Y-m-d');
+                    $changefreq = 'daily';
+                    $url = $item;
+                    $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);   
+                }
+                $this->sitemapConfigurator->store('xml', 'keypages', true, '', '');
+                $this->sitemapConfigurator->resetUrlSet();
+                $this->sitemapConfigurator->resetXmlString();
+                $mergePath[] = '/keypages.xml';
+            }
         }
     }
 
@@ -457,30 +479,20 @@ class SitemapGeneratorController extends BaseController
      * 
      * 
      */
-    protected function getKeypage ($page, $limit, $total)
+    protected function getKeypage ($page, $limit, $total, &$path)
     {
         if ($total < ($page + 1)) {
             return true;
         }
-        $categories = StoreKeyword::limit($limit)
+        $keywords = StoreKeyword::limit($limit)
                     ->offset($limit * $page)
                     ->get(['slug']);
-        if (count($categories) > 0) {
-            foreach ($categories as $item) {
-                $piority = '0.8';
-                $lastMode = date('Y-m-d');
-                $changefreq = 'daily';
-                $url = url('/') . $this->routeConfig['store_n_keyword'] .  htmlspecialchars($item->slug);
-                $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);   
+        if (count($keywords) > 0) {
+            foreach ($keywords as $item) {
+                $path[] = route($this->routeConfig['store_n_keyword'], ['slug' => htmlspecialchars($item->slug)]);
             }
-            $this->sitemapConfigurator->store('xml', 'keypages', true, '', '');
-            $this->sitemapConfigurator->resetUrlSet();
-            $this->sitemapConfigurator->resetXmlString();
         }
         $page = $page + 1;
-        $this->getKeypage($page, $limit, $total);
+        return $this->getKeypage($page, $limit, $total, $path);
     }
-
-
-
 }
