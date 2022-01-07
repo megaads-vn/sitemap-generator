@@ -2,6 +2,9 @@
 
 namespace Megaads\Generatesitemap\Controllers;
 
+use App\Models\Blog;
+use App\Models\Category;
+use App\Models\Store;
 use Config;
 use Dotenv\Dotenv;
 use Illuminate\Routing\Controller as BaseController;
@@ -87,6 +90,9 @@ class SitemapGeneratorController extends BaseController
         return response()->json(['status' => 'successful', 'message' => 'Sitemap created']);
     }
 
+    /**
+     * 
+     */
     public function multipleGenerateSitemap()
     {
         $sitemapType = config('generate-sitemap.sitemaptype');
@@ -106,6 +112,26 @@ class SitemapGeneratorController extends BaseController
         } catch (\Exception $ex) {
             throw new \Exception("Error generate. " .  $ex->getMessage());
         }
+    }
+
+    /**
+     * 
+     */
+    public function sitemapByAlphabet()
+    {
+        $response = [
+            'status' => 'successful'
+        ];
+        $mergePath = [];
+        $this->generateStores($mergePath);
+        $this->generateBlog($mergePath);
+        $this->generateCategories($mergePath);
+        $this->generateKeypages($mergePath);
+        
+        foreach ($mergePath as $item) {
+            $this->sitemapConfigurator->mergeSingleSitemap($item, 'sitemap');
+        }
+        return response()->json($response);
     }
 
     public function sitemapByLocales() {
@@ -249,4 +275,212 @@ class SitemapGeneratorController extends BaseController
         $response = curl_exec($channel);
         return json_decode($response);
     }
+
+    protected function generateStores(&$mergePath)
+    {
+        $total = Store::where('status', Store::STATUS_ENABLE)->count();
+        $limit = 200;
+        $page = 0;
+        $alphabetItems = [];
+        foreach (range('a', 'z') as $char) {
+            $alphabetItems[$char] = [];
+        }
+        if ($total > 0) {
+            $page = ceil($total / $limit);
+            $this->getStore(0, $limit, $page, $alphabetItems);
+            $this->addToAlphabetSiteMap($alphabetItems, $mergePath);
+        }
+    }
+
+    /**
+     * Add store to xml file separate by alphabet
+     * 
+     * @param array items
+     * 
+     * @return null
+     */
+    protected function addToAlphabetSiteMap($items, &$mergePath)
+    {
+        foreach ($items as $char => $childs) {
+            foreach ($childs as $child) {
+                    $piority = '0.8';
+                    $lastMode = date('Y-m-d');
+                    $changefreq = 'daily';
+                    $url = route($this->routeConfig['store'], ['slug' => htmlspecialchars($child)]);
+                    $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);            
+            }
+            $this->sitemapConfigurator->store('xml', 'stores-' . $char, true, '', '');
+            $this->sitemapConfigurator->resetUrlSet();
+            $this->sitemapConfigurator->resetXmlString();
+            $mergePath[] = '/stores-' . $char . '.xml';
+        }
+    }
+
+    /**
+     * Recursive function select store slug and add to array separate by alphabet
+     * 
+     * @param integer page
+     * @param integer limit
+     * @param integer total
+     * 
+     * @return boolean true
+     */
+    protected function getStore($page, $limit, $total, &$alphabetItems)
+    {
+        if ($total < ($page + 1)) {
+            return true;
+        }
+        $stores = Store::where('status', Store::STATUS_ENABLE)
+                    ->offset($page * $limit)
+                    ->limit($limit)
+                    ->get(['slug']);
+        if (count($stores) > 0) {
+            $count = 0;
+            foreach ($stores as $item) {
+                if ($count > 50) {
+                    break;
+                }
+                $count++;
+                $firstChar = strtolower($item->slug[0]);
+                if (is_numeric($firstChar)) {
+                    $alphabetItems['0-9'][] = $item->slug;
+                } else {
+                    $alphabetItems[$firstChar][] = $item->slug;
+                }
+            }
+        }
+        $page = $page + 1;
+        return $this->getStore($page, $limit, $total, $alphabetItems);
+    }
+
+    /**
+     * 
+     */
+    protected function generateBlog(&$mergePath)
+    {
+        $limit = 200;
+        $total = Blog::where('status', Blog::STATUS_ACTIVE)->count();
+        if ($total > 0) {
+            $page = ceil($total / $limit);
+            $this->getBlog(0, $limit, $page);
+            $mergePath[] = '/blog.xml';
+        }
+    }
+
+    /**
+     * 
+     * 
+     */
+    protected function getBlog ($page, $limit, $total)
+    {
+        if ($total < ($page + 1)) {
+            return true;
+        }
+        $blogs = Blog::where('status', Blog::STATUS_ACTIVE)
+                    ->limit($limit)
+                    ->offset($limit * $page)
+                    ->get(['slug']);
+        if (count($blogs) > 0) {
+            foreach ($blogs as $item) {
+                $piority = '0.8';
+                $lastMode = date('Y-m-d');
+                $changefreq = 'daily';
+                $url = route($this->routeConfig['blog'], ['slug' => htmlspecialchars($item->slug)]);
+                $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);   
+            }
+            $this->sitemapConfigurator->store('xml', 'blog', true, '', '');
+            $this->sitemapConfigurator->resetUrlSet();
+            $this->sitemapConfigurator->resetXmlString();
+        }
+        $page = $page + 1;
+        $this->getBlog($page, $limit, $total);
+    }
+
+    /**
+     * 
+     */
+    protected function generateCategories(&$mergePath)
+    {
+        $limit = 200;
+        $total = Category::where('status', Category::STATUS_ENABLE)->count();
+        if ($total > 0) {
+            $page = ceil($total / $limit);
+            $this->getCategory(0, $limit, $page);
+            $mergePath[] = '/categories.xml';
+        }
+    }
+
+    /**
+     * 
+     * 
+     */
+    protected function getCategory ($page, $limit, $total)
+    {
+        if ($total < ($page + 1)) {
+            return true;
+        }
+        $categories = Category::where('status', Category::STATUS_ENABLE)
+                    ->limit($limit)
+                    ->offset($limit * $page)
+                    ->get(['slug']);
+        if (count($categories) > 0) {
+            foreach ($categories as $item) {
+                $piority = '0.8';
+                $lastMode = date('Y-m-d');
+                $changefreq = 'daily';
+                $url = route($this->routeConfig['category'], ['slug' => htmlspecialchars($item->slug)]);
+                $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);   
+            }
+            $this->sitemapConfigurator->store('xml', 'categories', true, '', '');
+            $this->sitemapConfigurator->resetUrlSet();
+            $this->sitemapConfigurator->resetXmlString();
+        }
+        $page = $page + 1;
+        $this->getCategory($page, $limit, $total);
+    }
+
+    /**
+     * 
+     */
+    protected function generateKeypages(&$mergePath)
+    {
+        $limit = 200;
+        $total = StoreKeyword::count();
+        if ($total > 0) {
+            $page = ceil($total / $limit);
+            $this->getKeypage(0, $limit, $page);
+            $mergePath[] = '/keypages.xml';
+        }
+    }
+
+    /**
+     * 
+     * 
+     */
+    protected function getKeypage ($page, $limit, $total)
+    {
+        if ($total < ($page + 1)) {
+            return true;
+        }
+        $categories = StoreKeyword::limit($limit)
+                    ->offset($limit * $page)
+                    ->get(['slug']);
+        if (count($categories) > 0) {
+            foreach ($categories as $item) {
+                $piority = '0.8';
+                $lastMode = date('Y-m-d');
+                $changefreq = 'daily';
+                $url = url('/') . $this->routeConfig['store_n_keyword'] .  htmlspecialchars($item->slug);
+                $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);   
+            }
+            $this->sitemapConfigurator->store('xml', 'keypages', true, '', '');
+            $this->sitemapConfigurator->resetUrlSet();
+            $this->sitemapConfigurator->resetXmlString();
+        }
+        $page = $page + 1;
+        $this->getKeypage($page, $limit, $total);
+    }
+
+
+
 }

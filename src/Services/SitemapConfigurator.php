@@ -71,11 +71,11 @@ class SitemapConfigurator
      * @param $type
      * @param $name
      */
-    public function store($type, $name, $isMultiple = false, $locale = '')
+    public function store($type, $name, $isMultiple = false, $locale = '', $defaultPath = 'sitemap/')
     {
         $xmlFile = $this->publicPath . $name . '.' . $type;
         if ($isMultiple) {
-            $localeFolder = $this->publicPath . 'sitemap/' . $locale;
+            $localeFolder = $this->publicPath . $defaultPath . $locale;
             if (config('generate-sitemap.is_save_storage')) {
                 $localeFolder = $this->storagePath . $locale;
             }
@@ -99,12 +99,12 @@ class SitemapConfigurator
         fclose($openFile);
     }
 
-    public function mergeSitemap($locales, $mergeFile = 'sitemap')
+    public function mergeSitemap($locales, $mergeFile = '/sitemap/')
     {
         $isSaveStorage = config('generate-sitemap.is_save_storage');
         $baseUrl = url('/');
-        $path = $this->publicPath . '/sitemap/';
-        $basePath = $baseUrl . '/sitemap/';
+        $path = $this->publicPath . $mergeFile;
+        $basePath = $baseUrl . $mergeFile;
         if ($isSaveStorage) {
             $path = $this->storagePath;
             $basePath = $baseUrl . '/';
@@ -123,6 +123,23 @@ class SitemapConfigurator
                 $mergeXml = str_replace('#lastmod', $lastMode, $mergeXml);
                 array_push($this->arrayUrlSet, $mergeXml);
             }
+        }
+        $this->store('xml', $mergeFile);
+    }
+
+    public function mergeSingleSitemap($sourceFile, $mergeFile)
+    {
+        $baseUrl = url('/');
+        $path = $this->publicPath . $sourceFile;
+        $basePath = $baseUrl . $sourceFile;
+        $this->addMergeXmlHead();
+        $mergeSitemapString = '<sitemap><loc>#loc_content</loc><lastmod>#lastmod</lastmod></sitemap>';
+        $lastMode = date('Y-m-d');
+        if (file_exists($path)) {
+            $mergeXml = $mergeSitemapString;
+            $mergeXml = str_replace('#loc_content', $basePath, $mergeXml);
+            $mergeXml = str_replace('#lastmod', $lastMode, $mergeXml);
+            array_push($this->arrayUrlSet, $mergeXml);
         }
         $this->store('xml', $mergeFile);
     }
