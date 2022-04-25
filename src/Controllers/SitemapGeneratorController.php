@@ -489,7 +489,11 @@ class SitemapGeneratorController extends BaseController
                     ->get(['slug']);
         if (count($keywords) > 0) {
             foreach ($keywords as $item) {
-                $path[] = route($this->routeConfig['store_n_keyword'], ['slug' => htmlspecialchars($item->slug)]);
+                if (Route::has($this->routeConfig['store_n_keyword'])) {
+                    $path[] = route($this->routeConfig['store_n_keyword'], ['slug' => htmlspecialchars($item->slug)]);
+                } else {
+                    $path[] = url($this->routeConfig['store_n_keyword']) . '/' . htmlspecialchars($item->slug);
+                }
             }
         }
         $page = $page + 1;
