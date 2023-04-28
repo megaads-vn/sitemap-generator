@@ -67,7 +67,7 @@ class SitemapGeneratorController extends BaseController
                     $piority = '0.8';
                     $lastMode = date('c', time());
                     $changefreq = 'daily';
-                    $this->sitemapConfigurator->add($this->baseUrl . $this->store_n_keywordRouteName . htmlspecialchars($keyword->slug), $lastMode, $changefreq);
+                    $this->sitemapConfigurator->add($this->baseUrl . $this->store_n_keywordRouteName . htmlspecialchars($keyword->slug), $piority, $lastMode, $changefreq);
                 }
                 $this->sitemapConfigurator->store('xml', 'sitemap');
             }
