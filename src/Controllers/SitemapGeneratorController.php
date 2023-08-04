@@ -129,6 +129,7 @@ class SitemapGeneratorController extends BaseController
         $this->generateKeypages($mergePath);
         $this->generateDeals($mergePath);
         $this->generateReviews($mergePath);
+        $this->generateCategoryDeals($mergePath);
         foreach ($mergePath as $item) {
             $this->sitemapConfigurator->mergeSingleSitemap($item, 'sitemap');
         }
@@ -628,6 +629,72 @@ class SitemapGeneratorController extends BaseController
         }
         $page = $page + 1;
         return $this->getStoreReview($page, $limit, $total, $path);
+    }
+
+    /**
+     * @param $mergePath
+     * @return void
+     */
+    protected function generateCategoryDeals(&$mergePath)
+    {
+        $limit = 200;
+        $stores = DB::table('category as c')
+            ->join('deal_n_category as dc', 'dc.category_id', '=', 'c.id')
+            ->select([DB::raw('DISTINCT(c.id)'), 'c.title', 'c.slug'])
+            ->get();
+        $path = [];
+        if (!empty($stores)) {
+            $total = count($stores);
+            $page = ceil($total / $limit);
+            $this->getCategoryDeal(0, $limit, $page, $path);
+            if (count($path) > 0) {
+                foreach ($path as $item) {
+                    $piority = '0.8';
+                    $lastMode = date('c', time());
+                    $changefreq = 'daily';
+                    $url = $item;
+                    $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);
+                }
+                $this->sitemapConfigurator->store('xml', 'categorydeals', true, '', '');
+                $this->sitemapConfigurator->resetUrlSet();
+                $this->sitemapConfigurator->resetXmlString();
+                $mergePath[] = '/alldeals.xml';
+            }
+        }
+    }
+
+
+    /**
+     * @param $page
+     * @param $limit
+     * @param $total
+     * @param $path
+     * @return bool
+     */
+    protected function getCategoryDeal ($page, $limit, $total, &$path)
+    {
+        if ($total < ($page + 1)) {
+            return true;
+        }
+
+        $keywords = DB::table('category as c')
+            ->join('deal_n_category as dc', 'dc.category_id', '=', 'c.id')
+            ->limit($limit)
+            ->offset($limit * $page)
+            ->orderBy('c.id', 'DESC')
+            ->select([DB::raw('DISTINCT(c.id)'), 'c.title', 'c.slug'])
+            ->get();
+        if (count($keywords) > 0) {
+            foreach ($keywords as $item) {
+                if (Route::has($this->routeConfig['category_deals'])) {
+                    $path[] = route($this->routeConfig['category_deals'], ['slug' => htmlspecialchars($item->slug)]);
+                } else {
+                    $path[] = url($this->routeConfig['category_deals']) . '/' . htmlspecialchars($item->slug);
+                }
+            }
+        }
+        $page = $page + 1;
+        return $this->getDeal($page, $limit, $total, $path);
     }
 
 
