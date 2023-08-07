@@ -658,7 +658,7 @@ class SitemapGeneratorController extends BaseController
                 $this->sitemapConfigurator->store('xml', 'categorydeals', true, '', '');
                 $this->sitemapConfigurator->resetUrlSet();
                 $this->sitemapConfigurator->resetXmlString();
-                $mergePath[] = '/alldeals.xml';
+                $mergePath[] = '/categorydeals.xml';
             }
         }
     }
