@@ -25,7 +25,8 @@ return [
         'blog' => 'frontend::blog::detail', // Detail a blog
         'coupon' => 'frontend::coupon::detail', // Detail a coupon
         'store_n_keyword' =>  '/',
-        'tag' => 'frontend::tag::list'
+        'tag' => 'frontend::tag::list',
+        'detail_deal' => 'deal::detail'
     ],
     'static_routes' => [
         'home' => 'frontend::home',

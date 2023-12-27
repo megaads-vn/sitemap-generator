@@ -56,7 +56,7 @@ class GeneratesitemapServiceProvider extends ServiceProvider
 
     private function checkFrameWork() {
         $findFrameWork = ['laravel/framework','laravel/lumen-framework'];
-        $frameworkDeclare = file_get_contents(__DIR__ . '../../../../../composer.json');
+        $frameworkDeclare = file_get_contents(base_path('composer.json'));
         $frameworkDeclare = json_decode($frameworkDeclare, true);
         $required =  array_key_exists('require', $frameworkDeclare) ? $frameworkDeclare['require'] : [];
         $requiredKeys = [];

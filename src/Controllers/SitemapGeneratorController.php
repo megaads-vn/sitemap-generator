@@ -119,6 +119,8 @@ class SitemapGeneratorController extends BaseController
      */
     public function sitemapByAlphabet()
     {
+        ini_set('memory_limit', -1);
+        set_time_limit(7200);
         $response = [
             'status' => 'successful'
         ];
@@ -130,6 +132,7 @@ class SitemapGeneratorController extends BaseController
         $this->generateDeals($mergePath);
         $this->generateReviews($mergePath);
         $this->generateCategoryDeals($mergePath);
+        $this->generateDetailDeals($mergePath);
         foreach ($mergePath as $item) {
             $this->sitemapConfigurator->mergeSingleSitemap($item, 'sitemap');
         }
@@ -697,5 +700,86 @@ class SitemapGeneratorController extends BaseController
         return $this->getDeal($page, $limit, $total, $path);
     }
 
+    /**
+     * @param $mergePath
+     * @return void
+     */
+    protected function generateDetailDeals(&$mergePath) {
+        $total = 10000; //DB::table('deals')->where('status', 'active')->limit(10000)->count();
+        $limit = 200;
+        $page = 0;
+        $path = [];
+        if ($total > 0) {
+            $page = ceil($total / $limit);
+            $this->getDetailDeals(0, $limit, $page, $path);
+            if (count($path) > 0) {
+                foreach ($path as $item) {
+                    $piority = '0.8';
+                    $lastMode = date('c', time());
+                    $changefreq = 'daily';
+                    $url = $item;
+                    $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);
+                }
+                $this->sitemapConfigurator->store('xml', 'dealdetails', true, '', '');
+                $this->sitemapConfigurator->resetUrlSet();
+                $this->sitemapConfigurator->resetXmlString();
+                $mergePath[] = '/dealdetails.xml';
+            }
+        }
+    }
 
+    /**
+     * @param $page
+     * @param $limit
+     * @param $total
+     * @param $path
+     * @return bool
+     */
+    protected function getDetailDeals($page, $limit, $total, &$path)
+    {
+        if ($total < ($page + 1)) {
+            return true;
+        }
+        $deals = DB::table('deals')->where('status', 'active')
+            ->offset($page * $limit)
+            ->limit($limit)
+            ->get(['slug']);
+        if (count($deals) > 0) {
+            $count = 0;
+            foreach ($deals as $item) {
+                $count++;
+                if (Route::has($this->routeConfig['detail_deal'])) {
+                    $path[] = route($this->routeConfig['detail_deal'], ['slug' => htmlspecialchars($item->slug)]);
+                } else {
+                    $path[] = url($this->routeConfig['detail_deal']) . '/' . htmlspecialchars($item->slug);
+                }
+            }
+        }
+        $page = $page + 1;
+        return $this->getDetailDeals($page, $limit, $total, $path);
+    }
+
+    /**
+     * Add store to xml file separate by alphabet
+     *
+     * @param array items
+     *
+     * @return null
+     */
+    protected function addDetailDealWithItemLimited($items, &$mergePath)
+    {
+        foreach ($items as $index => $childs) {
+            foreach ($childs as $child) {
+                $piority = '0.8';
+                $lastMode = date('c', time());
+                $changefreq = 'daily';
+                $url = route($this->routeConfig['detail_deal'], ['slug' => htmlspecialchars($child)]);
+                $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);
+            }
+            $this->sitemapConfigurator->store('xml', 'dealdetail-' . $index, true, '', '');
+            $this->sitemapConfigurator->resetUrlSet();
+            $this->sitemapConfigurator->resetXmlString();
+            $mergePath[] = '/dealdetail-' . $index . '.xml';
+        }
+    }
 }
