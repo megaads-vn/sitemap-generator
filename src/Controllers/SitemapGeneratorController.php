@@ -5,6 +5,7 @@ namespace Megaads\Generatesitemap\Controllers;
 use App\Models\Blog;
 use App\Models\Category;
 use App\Models\Store;
+use Megaads\Generatesitemap\Models\Deal;
 use Config;
 use Dotenv\Dotenv;
 use Illuminate\Routing\Controller as BaseController;
@@ -293,7 +294,11 @@ class SitemapGeneratorController extends BaseController
         if ($total > 0) {
             $page = ceil($total / $limit);
             $this->getStore(0, $limit, $page, $alphabetItems);
-            $this->addToAlphabetSiteMap($alphabetItems, $mergePath);
+            if (config('app.wildcard_store_domain', false)) {
+                $this->addToAlphabetSitemapWildCart($alphabetItems, $mergePath);
+            } else {
+                $this->addToAlphabetSiteMap($alphabetItems, $mergePath);
+            }
         }
     }
 
@@ -312,6 +317,31 @@ class SitemapGeneratorController extends BaseController
                     $lastMode = date('c', time());
                     $changefreq = 'daily';
                     $url = route($this->routeConfig['store'], ['slug' => htmlspecialchars($child)]);
+                    $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);            
+            }
+            $this->sitemapConfigurator->store('xml', 'stores-' . $char, true, '', '');
+            $this->sitemapConfigurator->resetUrlSet();
+            $this->sitemapConfigurator->resetXmlString();
+            $mergePath[] = '/stores-' . $char . '.xml';
+        }
+    }
+
+    /**
+     * Add store to xml file separate by alphabet
+     * 
+     * @param array items
+     * 
+     * @return null
+     */
+    protected function addToAlphabetSitemapWildCart($items, &$mergePath) {
+        $baseUrlParse = parse_url($this->baseUrl);
+        foreach ($items as $char => $childs) {
+            foreach ($childs as $child) {
+                    $piority = '0.8';
+                    $lastMode = date('c', time());
+                    $changefreq = 'daily';
+                    // $url = route($this->routeConfig['store'], ['slug' => htmlspecialchars($child)]);
+                    $url = $baseUrlParse['scheme'] . '://' . $child . '.' . $baseUrlParse['host'];;
                     $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);            
             }
             $this->sitemapConfigurator->store('xml', 'stores-' . $char, true, '', '');
@@ -486,18 +516,33 @@ class SitemapGeneratorController extends BaseController
      */
     protected function getKeypage ($page, $limit, $total, &$path)
     {
+        $baseUrlParse = parse_url($this->baseUrl);
         if ($total < ($page + 1)) {
             return true;
         }
         $keywords = StoreKeyword::limit($limit)
+                    ->with(['store' => function($q) {
+                        $q->select(['slug', 'id']);
+                    }])
+                    ->where('visibility', StoreKeyword::STATUS_VISIBLE)
                     ->offset($limit * $page)
-                    ->get(['slug']);
+                    ->get(['slug', 'store_id']);
         if (count($keywords) > 0) {
-            foreach ($keywords as $item) {
-                if (Route::has($this->routeConfig['store_n_keyword'])) {
-                    $path[] = route($this->routeConfig['store_n_keyword'], ['slug' => htmlspecialchars($item->slug)]);
-                } else {
-                    $path[] = url($this->routeConfig['store_n_keyword']) . '/' . htmlspecialchars($item->slug);
+            if (config('app.wildcard_store_domain', false)) {
+                foreach ($keywords as $item) {
+                    $itemPath = $item->slug;
+                    if (isset($item->store) && !empty($item->store)) {
+                        $itemPath = $baseUrlParse['scheme'] . '://' . $item->store->slug . '.' . $baseUrlParse['host'] . '/' . $item->slug;
+                    }
+                    $path[] = $itemPath;
+                }
+            } else {
+                foreach ($keywords as $item) {
+                    if (Route::has($this->routeConfig['store_n_keyword'])) {
+                        $path[] = route($this->routeConfig['store_n_keyword'], ['slug' => htmlspecialchars($item->slug)]);
+                    } else {
+                        $path[] = url($this->routeConfig['store_n_keyword']) . '/' . htmlspecialchars($item->slug);
+                    }
                 }
             }
         }
@@ -546,6 +591,7 @@ class SitemapGeneratorController extends BaseController
      */
     protected function getDeal ($page, $limit, $total, &$path)
     {
+        $baseUrlParse = parse_url($this->baseUrl);
         if ($total < ($page + 1)) {
             return true;
         }
@@ -557,11 +603,19 @@ class SitemapGeneratorController extends BaseController
                         ->select([DB::raw('DISTINCT(s.id)'), 's.title', 's.slug'])
                         ->get();
         if (count($keywords) > 0) {
-            foreach ($keywords as $item) {
-                if (Route::has($this->routeConfig['deals'])) {
-                    $path[] = route($this->routeConfig['deals'], ['slug' => htmlspecialchars($item->slug)]);
-                } else {
-                    $path[] = url($this->routeConfig['deals']) . '/' . htmlspecialchars($item->slug);
+            if (config('app.wildcard_store_domain', false)) {
+                foreach ($keywords as $item) {
+                    $itemPath = $item->slug;
+                    $itemPath = $baseUrlParse['scheme'] . '://' . $item->slug . '.' . $baseUrlParse['host'] . '/deals';
+                    $path[] = $itemPath;
+                }
+            } else {
+                foreach ($keywords as $item) {
+                    if (Route::has($this->routeConfig['deals'])) {
+                        $path[] = route($this->routeConfig['deals'], ['slug' => htmlspecialchars($item->slug)]);
+                    } else {
+                        $path[] = url($this->routeConfig['deals']) . '/' . htmlspecialchars($item->slug);
+                    }
                 }
             }
         }
@@ -611,6 +665,7 @@ class SitemapGeneratorController extends BaseController
      */
     protected function getStoreReview ($page, $limit, $total, &$path)
     {
+        $baseUrlParse = parse_url($this->baseUrl);
         if ($total < ($page + 1)) {
             return true;
         }
@@ -622,13 +677,22 @@ class SitemapGeneratorController extends BaseController
                 ->select([DB::raw('DISTINCT(s.id)'), 's.title', 's.slug'])
                 ->get();
         if (count($keywords) > 0) {
-            foreach ($keywords as $item) {
-                if (Route::has($this->routeConfig['store_reviews'])) {
-                    $path[] = route($this->routeConfig['store_reviews'], ['slug' => htmlspecialchars($item->slug)]);
-                } else {
-                    $path[] = url($this->routeConfig['store_reviews']) . '/' . htmlspecialchars($item->slug);
+            if (config('app.wildcard_store_domain', false)) {
+                foreach ($keywords as $item) {
+                    $itemPath = $item->slug;
+                    $itemPath = $baseUrlParse['scheme'] . '://' . $item->slug . '.' . $baseUrlParse['host'] . '/reviews';
+                    $path[] = $itemPath;
+                }
+            } else {
+                foreach ($keywords as $item) {
+                    if (Route::has($this->routeConfig['store_reviews'])) {
+                        $path[] = route($this->routeConfig['store_reviews'], ['slug' => htmlspecialchars($item->slug)]);
+                    } else {
+                        $path[] = url($this->routeConfig['store_reviews']) . '/' . htmlspecialchars($item->slug);
+                    }
                 }
             }
+            
         }
         $page = $page + 1;
         return $this->getStoreReview($page, $limit, $total, $path);
@@ -744,24 +808,40 @@ class SitemapGeneratorController extends BaseController
      */
     protected function getDetailDeals($range, $fileIndex, $page, $limit, &$path)
     {
+        $baseUrlParse = parse_url($this->baseUrl);
         if ($page > 20) {
             return false;
         }
         $offset =  ($fileIndex * $range) + ($page * $limit);
-        $deals = DB::table('deals')
-            ->where('status', 'active')
-            ->orderBy('id', 'DESC')
-            ->offset($offset)
-            ->limit($limit)
-            ->get(['slug']);
+
+        $deals = Deal::where('status', 'active')
+                ->with(['store' => function($q) {
+                    $q->select(['slug', 'id']);
+                }])
+                ->orderBy('id', 'DESC')
+                ->offset($offset)
+                ->limit($limit)
+                ->get(['slug', 'store_id']);
+            
         if (count($deals) > 0) {
-            foreach ($deals as $item) {
-                if (Route::has($this->routeConfig['detail_deal'])) {
-                    $path[] = route($this->routeConfig['detail_deal'], ['slug' => htmlspecialchars($item->slug)]);
-                } else {
-                    $path[] = url($this->routeConfig['detail_deal']) . '/' . htmlspecialchars($item->slug);
+            if (config('app.wildcard_store_domain', false)) {
+                foreach ($deals as $item) {
+                    $itemPath = $this->baseUrl . '/' . htmlspecialchars($item->slug);
+                    if (isset($item->store) && !empty($item->store)) {
+                        $itemPath = $baseUrlParse['scheme'] . '://' . $item->store->slug . '.' . $baseUrlParse['host'] . '/deals/' . htmlspecialchars($item->slug);
+                    }
+                    $path[] = $itemPath;
+                }
+            } else {
+                foreach ($deals as $item) {
+                    if (Route::has($this->routeConfig['detail_deal'])) {
+                        $path[] = route($this->routeConfig['detail_deal'], ['slug' => htmlspecialchars($item->slug)]);
+                    } else {
+                        $path[] = url($this->routeConfig['detail_deal']) . '/' . htmlspecialchars($item->slug);
+                    }
                 }
             }
+            
         }
         $page = $page + 1;
         return $this->getDetailDeals($range, $fileIndex, $page, $limit,$path);

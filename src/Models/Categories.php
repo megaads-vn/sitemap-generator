@@ -7,5 +7,8 @@ class Categories extends BaseModel
     protected $primaryKey = 'id';
     public $timestamps = false;
 
-    
+    public function store()
+    {
+        return $this->belongsTo('Megaads\Generatesitemap\Models\Stores', 'store_id');
+    }
 }

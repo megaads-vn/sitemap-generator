@@ -1,14 +1,10 @@
-<?php
-
+<?php 
 namespace Megaads\Generatesitemap\Models;
 
-class StoreKeyword extends BaseModel
+class Deal extends BaseModel
 {
-    const STATUS_VISIBLE = 'visible';
-
-    protected $table = 'store_n_keyword';
+    protected $table='deals';
     protected $primaryKey = 'id';
-    public $timestamps = true;
 
     public function store()
     {
