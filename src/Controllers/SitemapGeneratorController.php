@@ -130,10 +130,14 @@ class SitemapGeneratorController extends BaseController
         $this->generateBlog($mergePath);
         $this->generateCategories($mergePath);
         $this->generateKeypages($mergePath);
-        $this->generateDeals($mergePath);
-        $this->generateReviews($mergePath);
-        $this->generateCategoryDeals($mergePath);
-        $this->generateDetailDeals($mergePath);
+        if (config('generate-sitemap.deal_page', false)) {
+            $this->generateDeals($mergePath);
+            $this->generateCategoryDeals($mergePath);
+            $this->generateDetailDeals($mergePath);
+        }
+        if (config('generate-sitemap.reviews', false)) {
+            $this->generateReviews($mergePath);
+        }
         foreach ($mergePath as $item) {
             $this->sitemapConfigurator->mergeSingleSitemap($item, 'sitemap');
         }
