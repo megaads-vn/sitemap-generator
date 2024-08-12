@@ -127,7 +127,7 @@ class SitemapConfigurator
         $this->store('xml', $mergeFile);
     }
 
-    public function mergeSingleSitemap($sourceFile, $mergeFile)
+    public function mergeSingleSitemap($sourceFile, $mergeFile, $locale = '')
     {
         $baseUrl = url('/');
         $path = $this->publicPath . $sourceFile;

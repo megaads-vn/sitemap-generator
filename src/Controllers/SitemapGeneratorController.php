@@ -2,21 +2,22 @@
 
 namespace Megaads\Generatesitemap\Controllers;
 
-use App\Models\Blog;
-use App\Models\Category;
-use App\Models\Store;
-use Megaads\Generatesitemap\Models\Deal;
+use URL;
 use Config;
+use Schema;
 use Dotenv\Dotenv;
-use Illuminate\Routing\Controller as BaseController;
+use App\Models\Blog;
+use App\Models\Store;
+use App\Models\Category;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Megaads\Generatesitemap\Models\Categories;
-use Megaads\Generatesitemap\Models\Stores;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Route;
+use Megaads\Generatesitemap\Models\Deal;
+use Megaads\Generatesitemap\Models\Stores;
+use Megaads\Generatesitemap\Models\Categories;
 use Megaads\Generatesitemap\Models\StoreKeyword;
-use Schema;
-use URL;
+use Illuminate\Routing\Controller as BaseController;
 
 class SitemapGeneratorController extends BaseController
 {
@@ -31,6 +32,7 @@ class SitemapGeneratorController extends BaseController
     protected $publicPath = null;
     private $sitemapConfigurator;
     protected $routeConfig = NULL;
+    protected $locale = '';
 
     /***
      * SitemapGeneratorController constructor.
@@ -41,6 +43,10 @@ class SitemapGeneratorController extends BaseController
         $this->publicPath = base_path() . '/public';
         $this->sitemapConfigurator = app()->make('sitemapConfigurator');
         $this->routeConfig = config('generate-sitemap.routes');
+        $this->locale = env('APP_LANG', '');
+        // if (!empty($this->locale)) {
+        //     $this->locale = '/' . $this->locale;
+        // }
     }
 
     /***
@@ -115,10 +121,10 @@ class SitemapGeneratorController extends BaseController
         }
     }
 
-    /**
-     * 
-     */
-    public function sitemapByAlphabet()
+   /**
+    * 
+    */
+    public function sitemapByAlphabet(Request $request)
     {
         ini_set('memory_limit', -1);
         set_time_limit(7200);
@@ -138,12 +144,19 @@ class SitemapGeneratorController extends BaseController
         if (config('generate-sitemap.reviews', false)) {
             $this->generateReviews($mergePath);
         }
+        $baseSitemapFile = 'sitemap';
+        if (!empty($this->locale)) {
+            $baseSitemapFile = $baseSitemapFile . '-' . $this->locale;
+        }
         foreach ($mergePath as $item) {
-            $this->sitemapConfigurator->mergeSingleSitemap($item, 'sitemap');
+            $this->sitemapConfigurator->mergeSingleSitemap($item, $baseSitemapFile);
         }
         return response()->json($response);
     }
 
+    /**
+     * 
+     */
     public function sitemapByLocales() {
         $listLocaleSuccess = [];
         $listLocaleFail = [];
@@ -315,6 +328,10 @@ class SitemapGeneratorController extends BaseController
      */
     protected function addToAlphabetSiteMap($items, &$mergePath)
     {
+        $sitemapLocale = '';
+        if (!empty($this->locale)) {
+            $sitemapLocale = "/sitemap-{$this->locale}";
+        }
         foreach ($items as $char => $childs) {
             foreach ($childs as $child) {
                     $piority = '0.8';
@@ -323,10 +340,10 @@ class SitemapGeneratorController extends BaseController
                     $url = route($this->routeConfig['store'], ['slug' => htmlspecialchars($child)]);
                     $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);            
             }
-            $this->sitemapConfigurator->store('xml', 'stores-' . $char, true, '', '');
+            $this->sitemapConfigurator->store('xml', 'stores-' . $char, true, $sitemapLocale, '');
             $this->sitemapConfigurator->resetUrlSet();
             $this->sitemapConfigurator->resetXmlString();
-            $mergePath[] = '/stores-' . $char . '.xml';
+            $mergePath[] = $sitemapLocale . '/stores-' . $char . '.xml';
         }
     }
 
@@ -339,19 +356,27 @@ class SitemapGeneratorController extends BaseController
      */
     protected function addToAlphabetSitemapWildCart($items, &$mergePath) {
         $baseUrlParse = parse_url($this->baseUrl);
+        $sitemapLocale = '';
+        if (!empty($this->locale)) {
+            $sitemapLocale = "/sitemap-{$this->locale}";
+        }
         foreach ($items as $char => $childs) {
             foreach ($childs as $child) {
                     $piority = '0.8';
                     $lastMode = date('c', time());
                     $changefreq = 'daily';
                     // $url = route($this->routeConfig['store'], ['slug' => htmlspecialchars($child)]);
-                    $url = $baseUrlParse['scheme'] . '://' . $child . '.' . $baseUrlParse['host'];;
+                    $url = $baseUrlParse['scheme'] . '://' . $child . '.' . $baseUrlParse['host'];
+                    if (!empty($this->locale)) {
+                        $url .=  '/' . $this->locale;
+                    }
                     $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);            
             }
-            $this->sitemapConfigurator->store('xml', 'stores-' . $char, true, '', '');
+            $sitemapPath = 'stores-' . $char;
+            $this->sitemapConfigurator->store('xml', $sitemapPath, true, $sitemapLocale, '');
             $this->sitemapConfigurator->resetUrlSet();
             $this->sitemapConfigurator->resetXmlString();
-            $mergePath[] = '/stores-' . $char . '.xml';
+            $mergePath[] = $sitemapLocale . '/stores-' . $char . '.xml';
         }
     }
 
@@ -400,6 +425,10 @@ class SitemapGeneratorController extends BaseController
         if ($total > 0) {
             $page = ceil($total / $limit);
             $this->getBlog(0, $limit, $page, $path);
+            $sitemapLocale = '';
+            if (!empty($this->locale)) {
+                $sitemapLocale = "/sitemap-{$this->locale}";
+            }
             if (count($path) > 0) {
                 foreach ($path as $item) {
                     $piority = '0.8';
@@ -408,10 +437,10 @@ class SitemapGeneratorController extends BaseController
                     $url = $item;
                     $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);   
                 }
-                $this->sitemapConfigurator->store('xml', 'blog', true, '', '');
+                $this->sitemapConfigurator->store('xml', 'blog', true, $sitemapLocale, '');
                 $this->sitemapConfigurator->resetUrlSet();
                 $this->sitemapConfigurator->resetXmlString();
-                $mergePath[] = '/blog.xml';
+                $mergePath[] = $sitemapLocale . '/blog.xml';
             }
         }
     }
@@ -449,6 +478,10 @@ class SitemapGeneratorController extends BaseController
         if ($total > 0) {
             $page = ceil($total / $limit);
             $this->getCategory(0, $limit, $page, $path);
+            $sitemapLocale = '';
+            if (!empty($this->locale)) {
+                $sitemapLocale = "/sitemap-{$this->locale}";
+            }
             if (count($path) > 0) {
                 foreach ($path as $item) {
                     $piority = '0.8';
@@ -457,10 +490,10 @@ class SitemapGeneratorController extends BaseController
                     $url = $item;
                     $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);   
                 }
-                $this->sitemapConfigurator->store('xml', 'categories', true, '', '');
+                $this->sitemapConfigurator->store('xml', 'categories', true, $sitemapLocale, '');
                 $this->sitemapConfigurator->resetUrlSet();
                 $this->sitemapConfigurator->resetXmlString();
-                $mergePath[] = '/categories.xml';
+                $mergePath[] = $sitemapLocale . '/categories.xml';
             }
         }
     }
@@ -499,6 +532,10 @@ class SitemapGeneratorController extends BaseController
             $page = ceil($total / $limit);
             $this->getKeypage(0, $limit, $page, $path);
             if (count($path) > 0) {
+                $sitemapLocale = '';
+                if (!empty($this->locale)) {
+                    $sitemapLocale = "/sitemap-{$this->locale}";
+                }
                 foreach ($path as $item) {
                     $piority = '0.8';
                     $lastMode = date('c', time());
@@ -506,10 +543,10 @@ class SitemapGeneratorController extends BaseController
                     $url = $item;
                     $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);   
                 }
-                $this->sitemapConfigurator->store('xml', 'keypages', true, '', '');
+                $this->sitemapConfigurator->store('xml', 'keypages', true, $sitemapLocale, '');
                 $this->sitemapConfigurator->resetUrlSet();
                 $this->sitemapConfigurator->resetXmlString();
-                $mergePath[] = '/keypages.xml';
+                $mergePath[] = $sitemapLocale . '/keypages.xml';
             }
         }
     }
@@ -533,10 +570,14 @@ class SitemapGeneratorController extends BaseController
                     ->get(['slug', 'store_id']);
         if (count($keywords) > 0) {
             if (config('app.wildcard_store_domain', false)) {
+                $localePath = '';   
+                if (!empty($this->locale)) {
+                    $localePath = '/' . $this->locale;
+                }
                 foreach ($keywords as $item) {
-                    $itemPath = $item->slug;
+                    $itemPath = $baseUrlParse['scheme'] . '://' .  $baseUrlParse['host'] . $localePath . '/' . $item->slug;
                     if (isset($item->store) && !empty($item->store)) {
-                        $itemPath = $baseUrlParse['scheme'] . '://' . $item->store->slug . '.' . $baseUrlParse['host'] . '/' . $item->slug;
+                        $itemPath = $baseUrlParse['scheme'] . '://' . $item->store->slug . '.' . $baseUrlParse['host'] . $localePath . '/' . $item->slug;
                     }
                     $path[] = $itemPath;
                 }
