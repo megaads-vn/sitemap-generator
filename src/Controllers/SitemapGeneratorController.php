@@ -135,7 +135,9 @@ class SitemapGeneratorController extends BaseController
         $this->generateStores($mergePath);
         $this->generateBlog($mergePath);
         $this->generateCategories($mergePath);
-        $this->generateKeypages($mergePath);
+        if (config('generate-sitemap.key_page', false)) {
+            $this->generateKeypages($mergePath);
+        }
         if (config('generate-sitemap.deal_page', false)) {
             $this->generateDeals($mergePath);
             $this->generateCategoryDeals($mergePath);
