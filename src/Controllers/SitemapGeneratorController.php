@@ -397,9 +397,11 @@ class SitemapGeneratorController extends BaseController
             return true;
         }
         $stores = Store::where('status', Store::STATUS_ENABLE)
+                    ->where('coupon_count', '>', 0)
                     ->offset($page * $limit)
                     ->limit($limit)
                     ->get(['slug']);
+        
         if (count($stores) > 0) {
             $count = 0;
             foreach ($stores as $item) {
