@@ -44,9 +44,9 @@ class SitemapGeneratorController extends BaseController
         $this->sitemapConfigurator = app()->make('sitemapConfigurator');
         $this->routeConfig = config('generate-sitemap.routes');
         $this->locale = env('APP_LANG', '');
-        // if (!empty($this->locale)) {
-        //     $this->locale = '/' . $this->locale;
-        // }
+    // if (!empty($this->locale)) {
+    //     $this->locale = '/' . $this->locale;
+    // }
     }
 
     /***
@@ -59,7 +59,7 @@ class SitemapGeneratorController extends BaseController
         $isByLocales = Input::get('multiple_locales', false);
         if (!$isMultiple) {
             $this->sitemapConfigurator->add(route('frontend::home'), '1');
-            $stores = Stores::get(['slug']);
+            $stores = Stores::where('status', Stores::STATUS_ENABLE)->get(['slug']);
             foreach ($stores as $store) {
                 $piority = '0.8';
                 $lastMode = date('c', time());
@@ -68,7 +68,7 @@ class SitemapGeneratorController extends BaseController
                 $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);
             }
 
-            if(Schema::hasTable('store_n_keyword')) {
+            if (Schema::hasTable('store_n_keyword')) {
                 $keywords = StoreKeyword::get(['slug']);
                 foreach ($keywords as $keyword) {
                     $piority = '0.8';
@@ -88,9 +88,11 @@ class SitemapGeneratorController extends BaseController
                 $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);
             }
             $this->sitemapConfigurator->store('xml', 'sitemap');
-        } else if ($isByLocales && $isMultiple) {
+        }
+        else if ($isByLocales && $isMultiple) {
             $this->multipleByLocales();
-        } else {
+        }
+        else {
             $this->multipleGenerateSitemap();
         }
 
@@ -105,25 +107,26 @@ class SitemapGeneratorController extends BaseController
         $sitemapType = config('generate-sitemap.sitemaptype');
         try {
             $mergePath = [];
-            foreach( $sitemapType as $key =>  $type ) {
-                if(Schema::hasTable($type)) {
+            foreach ($sitemapType as $key => $type) {
+                if (Schema::hasTable($type)) {
                     $routeName = $this->routeConfig[$type];
                     $this->addSitemapData($type, $routeName);
                     $this->sitemapConfigurator->store('xml', $type . '-sitemap', true, $key);
                     $this->sitemapConfigurator->resetUrlSet();
                     $this->sitemapConfigurator->resetXmlString();
-                    $mergePath[] = $key . '/' . $type .'-sitemap.xml';
+                    $mergePath[] = $key . '/' . $type . '-sitemap.xml';
                 }
             }
             $this->sitemapConfigurator->mergeSitemap($mergePath);
-        } catch (\Exception $ex) {
-            throw new \Exception("Error generate. " .  $ex->getMessage());
+        }
+        catch (\Exception $ex) {
+            throw new \Exception("Error generate. " . $ex->getMessage());
         }
     }
 
-   /**
-    * 
-    */
+    /**
+     * 
+     */
     public function sitemapByAlphabet(Request $request)
     {
         ini_set('memory_limit', -1);
@@ -159,7 +162,8 @@ class SitemapGeneratorController extends BaseController
     /**
      * 
      */
-    public function sitemapByLocales() {
+    public function sitemapByLocales()
+    {
         $listLocaleSuccess = [];
         $listLocaleFail = [];
         $locales = config('generate-sitemap.locales');
@@ -169,30 +173,33 @@ class SitemapGeneratorController extends BaseController
             $this->sitemapConfigurator->resetUrlSet();
             $this->sitemapConfigurator->resetXmlString();
             $mergePath[] = $key . '/sitemap.xml';
-            if ($key == 'us'){
+            if ($key == 'us') {
                 $url = config('app.domain') . '/sitemap-generator?is_multiple=true&multiple_locales=true';
-            }else{
+            }
+            else {
                 $url = config('app.domain') . '/' . $key . '/sitemap-generator?is_multiple=true&multiple_locales=true';
             }
             $request = $this->curlRequest($url);
             if (isset($request->status) && $request->status == 'successful') {
                 $listLocaleSuccess[] = $name;
-            } else {
+            }
+            else {
                 $listLocaleFail[$name] = $request;
             }
         }
-        $this->sitemapConfigurator->mergeSitemap($mergePath,'sitemap_index');
+        $this->sitemapConfigurator->mergeSitemap($mergePath, 'sitemap_index');
         return response()->json(['status' => 'successful', 'message' => 'List sitemap created: ' . implode(', ', $listLocaleSuccess), 'fail' => $listLocaleFail]);
     }
 
-    private function multipleByLocales() {
+    private function multipleByLocales()
+    {
         $locales = config('generate-sitemap.locales');
         $types = config('generate-sitemap.sitemaptype');
         try {
             $uri = array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '';
             preg_match('/\/([A-Za-z]+)(\/*)/', $uri, $matches);
             $locale = $matches[1];
-            if (!isset($locales[$locale])){
+            if (!isset($locales[$locale])) {
                 $locale = 'us';
             }
             foreach ($types as $key => $type) {
@@ -200,13 +207,14 @@ class SitemapGeneratorController extends BaseController
                     $routeName = $this->routeConfig[$type];
                     $this->addSitemapData($type, $routeName, ['slug']);
 
-                } else if ($key == 'menu') {
+                }
+                else if ($key == 'menu') {
                     $staticRoutes = config('generate-sitemap.' . $type);
                     foreach ($staticRoutes as $routeName) {
                         $piority = "0.8";
                         $lastMode = date('c', time());
                         $changeFreq = 'daily';
-                        $route =  route($routeName);
+                        $route = route($routeName);
                         $this->sitemapConfigurator->add($route, $piority, $lastMode, $changeFreq);
                     }
                 }
@@ -214,7 +222,8 @@ class SitemapGeneratorController extends BaseController
             $this->sitemapConfigurator->store('xml', 'sitemap', true, $locale . '/');
             $this->sitemapConfigurator->resetUrlSet();
             $this->sitemapConfigurator->resetXmlString();
-        } catch (\Exception $ex) {
+        }
+        catch (\Exception $ex) {
             throw new \Exception("Error generate. " . $ex->getMessage());
         }
     }
@@ -233,22 +242,24 @@ class SitemapGeneratorController extends BaseController
             if ($table == 'category') {
                 $this->sitemapConfigurator->add(route('frontend::home'), 1, date('c', time()), 'daily');
             }
-            $tableItems =  $buildQuery->get($columns);
+            $tableItems = $buildQuery->get($columns);
             if (!empty($tableItems)) {
                 foreach ($tableItems as $item) {
-                    if ($item->slug == 'root') continue;
+                    if ($item->slug == 'root')
+                        continue;
                     if (Route::has($routeName)) {
                         $route = "";
                         $piority = "0.8";
                         $lastMode = date('c', time());
                         $changeFreq = 'daily';
-                        $route =  route($routeName, ['slug' => htmlspecialchars($item->slug)]);
+                        $route = route($routeName, ['slug' => htmlspecialchars($item->slug)]);
                         $route = $this->formatRoute($route);
                         $this->sitemapConfigurator->add(urldecode($route), $piority, $lastMode, $changeFreq);
                     }
                 }
             }
-        } catch (\Exception $exception) {
+        }
+        catch (\Exception $exception) {
             throw new \Exception("Error database connection. Please check again.");
         }
     }
@@ -268,7 +279,8 @@ class SitemapGeneratorController extends BaseController
         return response()->json(['status' => 'successful', 'message' => 'List sitemap created: ' . implode(', ', $listLocaleSuccess)]);
     }
 
-    private function formatRoute($route) {
+    private function formatRoute($route)
+    {
         $parseUrl = parse_url($route);
         $urlPaths = explode('/', $parseUrl['path']);
         //Get last path to encode special characters
@@ -276,7 +288,7 @@ class SitemapGeneratorController extends BaseController
         //Remove last path.
         array_pop($urlPaths);
 
-        return $parseUrl['scheme']  . '://' . $parseUrl['host'] . join('/', $urlPaths) . '/' . urlencode($lastUrlPath);
+        return $parseUrl['scheme'] . '://' . $parseUrl['host'] . join('/', $urlPaths) . '/' . urlencode($lastUrlPath);
     }
 
     private function curlRequest($url, $data = [], $method = "GET", $isAsync = false)
@@ -315,7 +327,8 @@ class SitemapGeneratorController extends BaseController
             $this->getStore(0, $limit, $page, $alphabetItems);
             if (config('app.wildcard_store_domain', false)) {
                 $this->addToAlphabetSitemapWildCart($alphabetItems, $mergePath);
-            } else {
+            }
+            else {
                 $this->addToAlphabetSiteMap($alphabetItems, $mergePath);
             }
         }
@@ -336,11 +349,11 @@ class SitemapGeneratorController extends BaseController
         }
         foreach ($items as $char => $childs) {
             foreach ($childs as $child) {
-                    $piority = '0.8';
-                    $lastMode = date('c', time());
-                    $changefreq = 'daily';
-                    $url = route($this->routeConfig['store'], ['slug' => htmlspecialchars($child)]);
-                    $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);            
+                $piority = '0.8';
+                $lastMode = date('c', time());
+                $changefreq = 'daily';
+                $url = route($this->routeConfig['store'], ['slug' => htmlspecialchars($child)]);
+                $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);
             }
             $this->sitemapConfigurator->store('xml', 'stores-' . $char, true, $sitemapLocale, '');
             $this->sitemapConfigurator->resetUrlSet();
@@ -356,7 +369,8 @@ class SitemapGeneratorController extends BaseController
      * 
      * @return null
      */
-    protected function addToAlphabetSitemapWildCart($items, &$mergePath) {
+    protected function addToAlphabetSitemapWildCart($items, &$mergePath)
+    {
         $baseUrlParse = parse_url($this->baseUrl);
         $sitemapLocale = '';
         if (!empty($this->locale)) {
@@ -364,15 +378,15 @@ class SitemapGeneratorController extends BaseController
         }
         foreach ($items as $char => $childs) {
             foreach ($childs as $child) {
-                    $piority = '0.8';
-                    $lastMode = date('c', time());
-                    $changefreq = 'daily';
-                    // $url = route($this->routeConfig['store'], ['slug' => htmlspecialchars($child)]);
-                    $url = $baseUrlParse['scheme'] . '://' . $child . '.' . $baseUrlParse['host'];
-                    if (!empty($this->locale)) {
-                        $url .=  '/' . $this->locale;
-                    }
-                    $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);            
+                $piority = '0.8';
+                $lastMode = date('c', time());
+                $changefreq = 'daily';
+                // $url = route($this->routeConfig['store'], ['slug' => htmlspecialchars($child)]);
+                $url = $baseUrlParse['scheme'] . '://' . $child . '.' . $baseUrlParse['host'];
+                if (!empty($this->locale)) {
+                    $url .= '/' . $this->locale;
+                }
+                $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);
             }
             $sitemapPath = 'stores-' . $char;
             $this->sitemapConfigurator->store('xml', $sitemapPath, true, $sitemapLocale, '');
@@ -397,11 +411,11 @@ class SitemapGeneratorController extends BaseController
             return true;
         }
         $stores = Store::where('status', Store::STATUS_ENABLE)
-                    ->where('coupon_count', '>', 0)
-                    ->offset($page * $limit)
-                    ->limit($limit)
-                    ->get(['slug']);
-        
+            ->where('coupon_count', '>', 0)
+            ->offset($page * $limit)
+            ->limit($limit)
+            ->get(['slug']);
+
         if (count($stores) > 0) {
             $count = 0;
             foreach ($stores as $item) {
@@ -409,7 +423,8 @@ class SitemapGeneratorController extends BaseController
                 $firstChar = strtolower($item->slug[0]);
                 if (is_numeric($firstChar)) {
                     $alphabetItems['0-9'][] = $item->slug;
-                } else {
+                }
+                else {
                     $alphabetItems[$firstChar][] = $item->slug;
                 }
             }
@@ -439,7 +454,7 @@ class SitemapGeneratorController extends BaseController
                     $lastMode = date('c', time());
                     $changefreq = 'daily';
                     $url = $item;
-                    $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);   
+                    $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);
                 }
                 $this->sitemapConfigurator->store('xml', 'blog', true, $sitemapLocale, '');
                 $this->sitemapConfigurator->resetUrlSet();
@@ -453,15 +468,15 @@ class SitemapGeneratorController extends BaseController
      * 
      * 
      */
-    protected function getBlog ($page, $limit, $total, &$path)
+    protected function getBlog($page, $limit, $total, &$path)
     {
         if ($total < ($page + 1)) {
             return true;
         }
         $blogs = Blog::where('status', Blog::STATUS_ACTIVE)
-                    ->limit($limit)
-                    ->offset($limit * $page)
-                    ->get(['slug']);
+            ->limit($limit)
+            ->offset($limit * $page)
+            ->get(['slug']);
         if (count($blogs) > 0) {
             foreach ($blogs as $item) {
                 $path[] = route($this->routeConfig['blog'], ['slug' => htmlspecialchars($item->slug)]);
@@ -492,7 +507,7 @@ class SitemapGeneratorController extends BaseController
                     $lastMode = date('c', time());
                     $changefreq = 'daily';
                     $url = $item;
-                    $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);   
+                    $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);
                 }
                 $this->sitemapConfigurator->store('xml', 'categories', true, $sitemapLocale, '');
                 $this->sitemapConfigurator->resetUrlSet();
@@ -506,15 +521,15 @@ class SitemapGeneratorController extends BaseController
      * 
      * 
      */
-    protected function getCategory ($page, $limit, $total, &$path)
+    protected function getCategory($page, $limit, $total, &$path)
     {
         if ($total < ($page + 1)) {
             return true;
         }
         $categories = Category::where('status', Category::STATUS_ENABLE)
-                    ->limit($limit)
-                    ->offset($limit * $page)
-                    ->get(['slug']);
+            ->limit($limit)
+            ->offset($limit * $page)
+            ->get(['slug']);
         if (count($categories) > 0) {
             foreach ($categories as $item) {
                 $path[] = route($this->routeConfig['category'], ['slug' => htmlspecialchars($item->slug)]);
@@ -545,7 +560,7 @@ class SitemapGeneratorController extends BaseController
                     $lastMode = date('c', time());
                     $changefreq = 'daily';
                     $url = $item;
-                    $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);   
+                    $this->sitemapConfigurator->add($url, $piority, $lastMode, $changefreq);
                 }
                 $this->sitemapConfigurator->store('xml', 'keypages', true, $sitemapLocale, '');
                 $this->sitemapConfigurator->resetUrlSet();
@@ -559,37 +574,39 @@ class SitemapGeneratorController extends BaseController
      * 
      * 
      */
-    protected function getKeypage ($page, $limit, $total, &$path)
+    protected function getKeypage($page, $limit, $total, &$path)
     {
         $baseUrlParse = parse_url($this->baseUrl);
         if ($total < ($page + 1)) {
             return true;
         }
         $keywords = StoreKeyword::limit($limit)
-                    ->with(['store' => function($q) {
-                        $q->select(['slug', 'id']);
-                    }])
-                    ->where('visibility', StoreKeyword::STATUS_VISIBLE)
-                    ->offset($limit * $page)
-                    ->get(['slug', 'store_id']);
+            ->with(['store' => function ($q) {
+            $q->select(['slug', 'id']);
+        }])
+            ->where('visibility', StoreKeyword::STATUS_VISIBLE)
+            ->offset($limit * $page)
+            ->get(['slug', 'store_id']);
         if (count($keywords) > 0) {
             if (config('app.wildcard_store_domain', false)) {
-                $localePath = '';   
+                $localePath = '';
                 if (!empty($this->locale)) {
                     $localePath = '/' . $this->locale;
                 }
                 foreach ($keywords as $item) {
-                    $itemPath = $baseUrlParse['scheme'] . '://' .  $baseUrlParse['host'] . $localePath . '/' . $item->slug;
+                    $itemPath = $baseUrlParse['scheme'] . '://' . $baseUrlParse['host'] . $localePath . '/' . $item->slug;
                     if (isset($item->store) && !empty($item->store)) {
                         $itemPath = $baseUrlParse['scheme'] . '://' . $item->store->slug . '.' . $baseUrlParse['host'] . $localePath . '/' . $item->slug;
                     }
                     $path[] = $itemPath;
                 }
-            } else {
+            }
+            else {
                 foreach ($keywords as $item) {
                     if (Route::has($this->routeConfig['store_n_keyword'])) {
                         $path[] = route($this->routeConfig['store_n_keyword'], ['slug' => htmlspecialchars($item->slug)]);
-                    } else {
+                    }
+                    else {
                         $path[] = url($this->routeConfig['store_n_keyword']) . '/' . htmlspecialchars($item->slug);
                     }
                 }
@@ -607,9 +624,9 @@ class SitemapGeneratorController extends BaseController
     {
         $limit = 200;
         $stores = DB::table('store as s')
-                    ->join('deals as d', 'd.store_id', '=', 's.id')
-                    ->select([DB::raw('DISTINCT(s.id)'), 's.title', 's.slug'])
-                    ->get();
+            ->join('deals as d', 'd.store_id', '=', 's.id')
+            ->select([DB::raw('DISTINCT(s.id)'), 's.title', 's.slug'])
+            ->get();
         $path = [];
         if (!empty($stores)) {
             $total = count($stores);
@@ -638,19 +655,19 @@ class SitemapGeneratorController extends BaseController
      * @param $path
      * @return bool
      */
-    protected function getDeal ($page, $limit, $total, &$path)
+    protected function getDeal($page, $limit, $total, &$path)
     {
         $baseUrlParse = parse_url($this->baseUrl);
         if ($total < ($page + 1)) {
             return true;
         }
         $keywords = DB::table('store as s')
-                        ->join('deals as d', 'd.store_id', '=', 's.id')
-                        ->limit($limit)
-                        ->offset($limit * $page)
-                        ->orderBy('id', 'DESC')
-                        ->select([DB::raw('DISTINCT(s.id)'), 's.title', 's.slug'])
-                        ->get();
+            ->join('deals as d', 'd.store_id', '=', 's.id')
+            ->limit($limit)
+            ->offset($limit * $page)
+            ->orderBy('id', 'DESC')
+            ->select([DB::raw('DISTINCT(s.id)'), 's.title', 's.slug'])
+            ->get();
         if (count($keywords) > 0) {
             if (config('app.wildcard_store_domain', false)) {
                 foreach ($keywords as $item) {
@@ -658,11 +675,13 @@ class SitemapGeneratorController extends BaseController
                     $itemPath = $baseUrlParse['scheme'] . '://' . $item->slug . '.' . $baseUrlParse['host'] . '/deals';
                     $path[] = $itemPath;
                 }
-            } else {
+            }
+            else {
                 foreach ($keywords as $item) {
                     if (Route::has($this->routeConfig['deals'])) {
                         $path[] = route($this->routeConfig['deals'], ['slug' => htmlspecialchars($item->slug)]);
-                    } else {
+                    }
+                    else {
                         $path[] = url($this->routeConfig['deals']) . '/' . htmlspecialchars($item->slug);
                     }
                 }
@@ -681,9 +700,9 @@ class SitemapGeneratorController extends BaseController
     {
         $limit = 200;
         $stores = DB::table('store as s')
-                    ->join('store_reviews as r', 'r.store_id', '=', 's.id')
-                    ->select([DB::raw('DISTINCT(s.id)'), 's.title', 's.slug'])
-                    ->get();
+            ->join('store_reviews as r', 'r.store_id', '=', 's.id')
+            ->select([DB::raw('DISTINCT(s.id)'), 's.title', 's.slug'])
+            ->get();
         $path = [];
         if (!empty($stores)) {
             $total = count($stores);
@@ -712,19 +731,19 @@ class SitemapGeneratorController extends BaseController
      * @param $path
      * @return bool
      */
-    protected function getStoreReview ($page, $limit, $total, &$path)
+    protected function getStoreReview($page, $limit, $total, &$path)
     {
         $baseUrlParse = parse_url($this->baseUrl);
         if ($total < ($page + 1)) {
             return true;
         }
         $keywords = DB::table('store as s')
-                ->join('store_reviews as r', 'r.store_id', '=', 's.id')
-                ->limit($limit)
-                ->offset($limit * $page)
-                ->orderBy('id', 'DESC')
-                ->select([DB::raw('DISTINCT(s.id)'), 's.title', 's.slug'])
-                ->get();
+            ->join('store_reviews as r', 'r.store_id', '=', 's.id')
+            ->limit($limit)
+            ->offset($limit * $page)
+            ->orderBy('id', 'DESC')
+            ->select([DB::raw('DISTINCT(s.id)'), 's.title', 's.slug'])
+            ->get();
         if (count($keywords) > 0) {
             if (config('app.wildcard_store_domain', false)) {
                 foreach ($keywords as $item) {
@@ -732,16 +751,18 @@ class SitemapGeneratorController extends BaseController
                     $itemPath = $baseUrlParse['scheme'] . '://' . $item->slug . '.' . $baseUrlParse['host'] . '/reviews';
                     $path[] = $itemPath;
                 }
-            } else {
+            }
+            else {
                 foreach ($keywords as $item) {
                     if (Route::has($this->routeConfig['store_reviews'])) {
                         $path[] = route($this->routeConfig['store_reviews'], ['slug' => htmlspecialchars($item->slug)]);
-                    } else {
+                    }
+                    else {
                         $path[] = url($this->routeConfig['store_reviews']) . '/' . htmlspecialchars($item->slug);
                     }
                 }
             }
-            
+
         }
         $page = $page + 1;
         return $this->getStoreReview($page, $limit, $total, $path);
@@ -787,7 +808,7 @@ class SitemapGeneratorController extends BaseController
      * @param $path
      * @return bool
      */
-    protected function getCategoryDeal ($page, $limit, $total, &$path)
+    protected function getCategoryDeal($page, $limit, $total, &$path)
     {
         if ($total < ($page + 1)) {
             return true;
@@ -804,7 +825,8 @@ class SitemapGeneratorController extends BaseController
             foreach ($keywords as $item) {
                 if (Route::has($this->routeConfig['category_deals'])) {
                     $path[] = route($this->routeConfig['category_deals'], ['slug' => htmlspecialchars($item->slug)]);
-                } else {
+                }
+                else {
                     $path[] = url($this->routeConfig['category_deals']) . '/' . htmlspecialchars($item->slug);
                 }
             }
@@ -817,7 +839,8 @@ class SitemapGeneratorController extends BaseController
      * @param $mergePath
      * @return void
      */
-    protected function generateDetailDeals(&$mergePath) {
+    protected function generateDetailDeals(&$mergePath)
+    {
         set_time_limit(7200);
         ini_set('memory_limit', '2048M');
 
@@ -861,17 +884,17 @@ class SitemapGeneratorController extends BaseController
         if ($page > 20) {
             return false;
         }
-        $offset =  ($fileIndex * $range) + ($page * $limit);
+        $offset = ($fileIndex * $range) + ($page * $limit);
 
         $deals = Deal::where('status', 'active')
-                ->with(['store' => function($q) {
-                    $q->select(['slug', 'id']);
-                }])
-                ->orderBy('id', 'DESC')
-                ->offset($offset)
-                ->limit($limit)
-                ->get(['slug', 'store_id']);
-            
+            ->with(['store' => function ($q) {
+            $q->select(['slug', 'id']);
+        }])
+            ->orderBy('id', 'DESC')
+            ->offset($offset)
+            ->limit($limit)
+            ->get(['slug', 'store_id']);
+
         if (count($deals) > 0) {
             if (config('app.wildcard_store_domain', false)) {
                 foreach ($deals as $item) {
@@ -881,19 +904,21 @@ class SitemapGeneratorController extends BaseController
                     }
                     $path[] = $itemPath;
                 }
-            } else {
+            }
+            else {
                 foreach ($deals as $item) {
                     if (Route::has($this->routeConfig['detail_deal'])) {
                         $path[] = route($this->routeConfig['detail_deal'], ['slug' => htmlspecialchars($item->slug)]);
-                    } else {
+                    }
+                    else {
                         $path[] = url($this->routeConfig['detail_deal']) . '/' . htmlspecialchars($item->slug);
                     }
                 }
             }
-            
+
         }
         $page = $page + 1;
-        return $this->getDetailDeals($range, $fileIndex, $page, $limit,$path);
+        return $this->getDetailDeals($range, $fileIndex, $page, $limit, $path);
     }
 
     /**
