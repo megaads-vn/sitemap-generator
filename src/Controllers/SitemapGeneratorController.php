@@ -59,7 +59,7 @@ class SitemapGeneratorController extends BaseController
         $isByLocales = Input::get('multiple_locales', false);
         if (!$isMultiple) {
             $this->sitemapConfigurator->add(route('frontend::home'), '1');
-            $stores = Stores::where('status', Stores::STATUS_ENABLE)->get(['slug']);
+            $stores = Stores::where('status', Stores::STATUS_ACTIVE)->get(['slug']);
             foreach ($stores as $store) {
                 $piority = '0.8';
                 $lastMode = date('c', time());
